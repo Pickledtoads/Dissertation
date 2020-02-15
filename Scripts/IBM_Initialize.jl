@@ -5,13 +5,13 @@ function InitT(y, x)
     # Outputs:  a dictionary containing the needed counts
 
     # split the english sentence into words
-    s_split = Sent_Split(y, x)
-    e = s_split[1]
-    f = s_split[2]
+    sent = Sent_Split(y, x)
+    e = sent[1]
+    f = sent[2]
 
     # Initialise a dictionary of zeros for storing counts
     s_tot = Dict(f.=> fill(Dict(e.=>zeros(size(e)[1])),size(f)[1]))
-    
+
     # For each time a word pair appears, add to the translation count
     for i in 1:size(f)[1]
         for j in 1:size(e)[1]
