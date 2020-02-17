@@ -125,20 +125,22 @@ function prob(eng,fre,a,dict, align, fert, null)
     # choose the right alignment table
     align_key = hcat(string(length(eng)), string(length(fre)))
     align = align[align_key]
-   # println("Wagger")
+
     # factor in fertility only if we have estimated the
     if fert != false
-        #println("hello")
-    # find the probability associated with fertility
 
+    # find the probability associated with fertility
         for i in 1:length(fre)
             f = length([k for (k,v) in a if v==i])
+
+            # Calculate the fertility probabilities
             if f in keys(fert[fre[i]])
                 fertility+=log(factorial(f)*fert[fre[i]][f])
-                #println(fertility)
             end
 
             phi = length([k for (k,v) in a if v==length(fre)])
+            # if there are lots of null tokens the "choose" term needs
+            # to be found differently
             if length(eng)>(2*phi)
                 nulls = (factorial(length(eng)-phi)/(factorial(phi)*factorial(length(eng)-2*phi)))*null[1]^phi*null[2]^(length(eng)-phi)
                 fertility += log(nulls)
@@ -148,10 +150,11 @@ function prob(eng,fre,a,dict, align, fert, null)
             end
         end
 
+    # If we have not yet found fertility probabilities
     else
         fertility = 0
     end
-    #println("patter")
+
     # find the alignment and translation probabilities
     for j in 1:length(eng)
         #println(lex_align)
@@ -169,4 +172,119 @@ function prob(eng,fre,a,dict, align, fert, null)
 
     return(prob)
 
+end
+
+
+using Base.Threads
+
+
+function IBM3(Eng, Fre, iter, init)
+    # Purpose:  Apply the IBM3 model to the training data
+    # Inputs :  Eng - ordered array of all the English sentences
+    #           Fre - ordered array of all the French sentences
+    #           iter - number of iterations we want to run for
+    #           init - the dictionary containing the output from IBM2
+    # Outputs:  A dictionary containing translation, alignment, fertility
+    #           and null insertion probabilities
+
+    init = Dict("trans"=>copy(init["trans"]),"align"=>copy(init["align"]), "fert"=>false, "null"=>false)
+
+    for it in 1:iter
+        # initialise the count variables
+        count_t = zero_dict(init["trans"]) # translation count
+        total_t = Dict(keys(init["trans"]) .=> [0.0]*length(count_t))
+
+        count_d = zero_align(init_Align(Eng, Fre))# distortion counts
+        total_d = Dict()
+
+        count_p1 = 0 # null insertion counts
+        count_p0 = 0
+        count_f = Dict()
+        for k in keys(init["trans"])
+            count_f[k] =  Dict()# fertility counts
+        end
+
+        @threads for s in 1:length(Eng)
+            # split up our words
+            print(hcat(string(s),"|"))
+            eng = Sent_Split(Eng[s],Fre[s])[1]
+            fre = Sent_Split(Eng[s],Fre[s])[2]
+            align_key = hcat(string(length(eng)),string(length(fre)))
+
+            A = sample(eng,fre,init["trans"], init["align"], init["fert"], init["null"])
+
+            c_tot = 0
+
+            for a in A
+                c_tot += prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])
+            end
+
+            for a in A
+                null = 0
+                c = prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
+                for e in 1:length(eng)
+                    count_t[fre[a[e]]][eng[e]] += c
+                    total_t[fre[a[e]]] += c
+                    #println("potatoes")
+                    count_d[align_key][e,a[e]] += c
+                    if a[e] == (length(fre))
+                        null += 1
+                    end
+                end
+                if align_key in keys(total_d)
+                    total_d[align_key] .+= sum(count_d[align_key],dims=1)
+                else
+                    total_d[align_key] = sum(count_d[align_key],dims=1)
+                end
+                if !isnan(null*c) & !isnan((length(eng)-2*null)*c)
+                    count_p1 += null*c
+                    count_p0 += abs(length(eng)-2*null)*c
+                end
+                #println([count_p1,count_p0])
+                for e in 1:length(eng)
+                    fertility = 0
+                    for j in 1:length(fre)
+                        if j == a[e]
+                            fertility += 1
+                        end
+                        temp = Dict(fertility => c)
+                        count_f[fre[j]]= merge(+,count_f[fre[j]], temp)
+                    end
+                end
+            end
+        end
+        # initialise the new distributions
+        Translation_Dict = zero_dict(init["trans"])
+
+        alignments = zero_align(count_d)
+
+        fertilities = copy(count_f)
+        # recalculate the translation distribution
+        for i in 1:length(Translation_Dict)
+            fre = collect(keys(Translation_Dict))[i]
+            for j in 1:length(Translation_Dict[fre])
+                eng = collect(keys(Translation_Dict[fre]))[j]
+                Translation_Dict[fre][eng] = count_t[fre][eng]/ total_t[fre]
+            end
+        end
+        # Recalculate the alignment distribution
+        for k in keys(count_d)
+            row = size(count_d[k])[1]
+            col = size(count_d[k])[2]
+            for i in 1:col
+                for j in 1:row
+                    alignments[k][j,i] = count_d[k][j,i]/total_d[k][i]
+                end
+            end
+        end
+        # Recalculate the fertility distribution
+        for f in collect(keys(fertilities))
+            normed_vals = values(fertilities[f])./ sum(values(fertilities[f]))
+            fertilities[f] = Dict(keys(fertilities[f]).=> normed_vals)
+        end
+        p1 = count_p1/(count_p1+count_p0)
+        p0 = 1 - p1
+        init = Dict("trans"=> copy(Translation_Dict),"align"=>copy(alignments),"fert"=>copy(fertilities), "null" => [p1,p0])
+    end
+    return(init)
 end
