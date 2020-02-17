@@ -11,7 +11,7 @@ function CountP(y, x, tDict)
     e = sent[1]
     f = sent[2]
 
-    s_tot = tDict(e.=> [0.0]*length(e))
+    s_tot = Dict(e .=> [0.0]*length(e))
 
     # for each english/french pair that appears record the current translation
     # probabilty in a tDictionary
@@ -42,13 +42,12 @@ function IBM1(Eng, Fre, iter, init)
     for j in 1:iter
 
         # create a zeroed copy of the translation dictionary
-        Translation_tDict = zero_tDict(copy(init))
+        tDict = zero_dict(copy(init))
 
         # for each sentence record the sum of translation probabilites
         # for each pair of words
-        total = tDict(collect(keys(new_tDict)) .=> [0.0]*length(keys(new_tDict)))
+        total = Dict(collect(keys(new_tDict)) .=> [0.0]*length(keys(new_tDict)))
         for i in 1:length(Eng)
-
             # call CountP to produce counts for sentence i
             SentCount = CountP(Eng[i], Fre[i], new_tDict)
 
@@ -64,25 +63,24 @@ function IBM1(Eng, Fre, iter, init)
                 for e in 1:length(en)
                     french = string(fr[f])
                     english = string(en[e])
-
                     # for the selected French-English pair work out a
                     # weighted probability of translation
                     newval = new_tDict[french][english]/SentCount[english]
 
                     # add newval to the relevant location of the lexical distribution
-                    Translation_tDict[french][english] += newval
+                    tDict[french][english] += newval
                     total[french] += newval
                 end
             end
         end
 
         # iterate through each entry in the dictionary to normalise them
-        for f in collect(keys(Translation_tDict))
-                new = collect(values(Translation_tDict[f]))./total[f]
-                new = Dict(collect(keys(Translation_tDict[f])) .=> new)
-                Translation_tDict[f] = new
+        for f in collect(keys(tDict))
+                new = collect(values(tDict[f]))./total[f]
+                new = Dict(collect(keys(tDict[f])) .=> new)
+                tDict[f] = new
         end
-        new_tDict = Translation_tDict
+        new_tDict = tDict
     end
 
     return(new_tDict)

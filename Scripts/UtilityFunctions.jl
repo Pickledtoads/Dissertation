@@ -51,7 +51,7 @@ function init_Align(Eng, Fre)
                 new = new/(size(f)[1]+1)
 
                 # associate the new alignment table with its key in the dictionary
-                align[Key] = new
+                align[align_key] = new
             end
     end
     return(align)
