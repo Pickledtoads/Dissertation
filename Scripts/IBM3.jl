@@ -18,7 +18,7 @@ function hillclimbing(eng, fre, a, jp, dict, align, fert, null)
     while go == true
         a_old = copy(a)
         neighbors = neighboring(a, jp, lens)
-        for n in neighbors
+        @threads for n in neighbors
 
             # Check if the latest option has a greater probability
             if prob(eng,fre,n,dict,align,fert, null) > prob(eng,fre,a,dict,align,fert, null)
@@ -204,9 +204,11 @@ function IBM3(Eng, Fre, iter, init)
             count_f[k] =  Dict()# fertility counts
         end
 
-        @threads for s in 1:length(Eng)
+        for s in 1:length(Eng)
             # split up our words
-            print(hcat(string(s),"|"))
+            if s%100 ==0
+                println(s)
+            end
             eng = Sent_Split(Eng[s],Fre[s])[1]
             fre = Sent_Split(Eng[s],Fre[s])[2]
             align_key = hcat(string(length(eng)),string(length(fre)))
@@ -260,7 +262,7 @@ function IBM3(Eng, Fre, iter, init)
 
         fertilities = copy(count_f)
         # recalculate the translation distribution
-        for i in 1:length(Translation_Dict)
+        @threads for i in 1:length(Translation_Dict)
             fre = collect(keys(Translation_Dict))[i]
             for j in 1:length(Translation_Dict[fre])
                 eng = collect(keys(Translation_Dict[fre]))[j]
