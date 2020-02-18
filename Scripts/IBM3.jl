@@ -18,7 +18,8 @@ function hillclimbing(eng, fre, a, jp, dict, align, fert, null)
     while go == true
         a_old = copy(a)
         neighbors = neighboring(a, jp, lens)
-        @threads for n in neighbors
+
+        for n in neighbors
 
             # Check if the latest option has a greater probability
             if prob(eng,fre,n,dict,align,fert, null) > prob(eng,fre,a,dict,align,fert, null)
@@ -141,26 +142,33 @@ function prob(eng,fre,a,dict, align, fert, null)
             phi = length([k for (k,v) in a if v==length(fre)])
             # if there are lots of null tokens the "choose" term needs
             # to be found differently
+
             if length(eng)>(2*phi)
                 N = length(eng)-phi
                 x = phi
                 N_x = N-x
 
-                numerator = big((N^0.5)*(N/MathConstants.e)^N)
-                denominator = big(((2*MathConstants.pi*x*N_x)^0.5)*(x/MathConstants.e)^x*(N_x/MathConstants.e)^N_x)
+                numerator = 0.5*log(2*MathConstants.pi*N)+N*log(N/MathConstants.e)
 
-                nulls = (numerator/denominator)*null[1]^phi*null[2]^(length(eng)-phi)
-                fertility += log(nulls)
+                if x != 0
+                    denominator = 0.5*log(2*MathConstants.pi*x)+0.5*log(2*MathConstants.pi*N_x)+x*log(x/MathConstants.e)+N_x*log(N_x/MathConstants.e)
+                elseif x == 0
+                    denominator = 0.5*log(2*MathConstants.pi*N_x)+N_x*log(N_x/MathConstants.e)
+                end
+
+
+                nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
+                fertility += nulls
             else
                 N = phi+1
                 x = 2*phi+1-length(eng)
                 N_x = N-x
 
-                numerator = big((N^0.5)*(N/MathConstants.e)^N)
-                denominator = big(((2*MathConstants.pi*x*N_x)^0.5)*(x/MathConstants.e)^x*(N_x/MathConstants.e)^N_x)
+                numerator = 0.5*log(N)+N*log(N/MathConstants.e)
+                denominator = 0.5*log(2*MathConstants.pi*x*N_x)+x*log(x/MathConstants.e)+N_x*log(N_x/MathConstants.e)
 
-                nulls = (numerator/denominator)*null[1]^phi*null[2]^(length(eng)-phi)
-                fertility += log(nulls)
+                nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
+                fertility += nulls
             end
         end
 
@@ -218,7 +226,7 @@ function IBM3(Eng, Fre, iter, init)
             count_f[k] =  Dict()# fertility counts
         end
 
-        for s in 1:length(Eng)
+        @threads for s in 1:length(Eng)
             # split up our words
             if s%100 ==0
                 println(s)
@@ -228,7 +236,6 @@ function IBM3(Eng, Fre, iter, init)
             align_key = hcat(string(length(eng)),string(length(fre)))
 
             A = sample(eng,fre,init["trans"], init["align"], init["fert"], init["null"])
-
             c_tot = 0
 
             for a in A
@@ -256,7 +263,6 @@ function IBM3(Eng, Fre, iter, init)
                     count_p1 += null*c
                     count_p0 += abs(length(eng)-2*null)*c
                 end
-                #println([count_p1,count_p0])
                 for e in 1:length(eng)
                     fertility = 0
                     for j in 1:length(fre)
@@ -278,7 +284,7 @@ function IBM3(Eng, Fre, iter, init)
         # recalculate the translation distribution
         for i in 1:length(Translation_Dict)
             fre = collect(keys(Translation_Dict))[i]
-            for j in 1:length(Translation_Dict[fre])
+            @threads for j in 1:length(Translation_Dict[fre])
                 eng = collect(keys(Translation_Dict[fre]))[j]
                 Translation_Dict[fre][eng] = count_t[fre][eng]/ total_t[fre]
             end
@@ -288,7 +294,7 @@ function IBM3(Eng, Fre, iter, init)
             row = size(count_d[k])[1]
             col = size(count_d[k])[2]
             for i in 1:col
-                for j in 1:row
+                @threads for j in 1:row
                     alignments[k][j,i] = count_d[k][j,i]/total_d[k][i]
                 end
             end
