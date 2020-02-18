@@ -276,7 +276,7 @@ function IBM3(Eng, Fre, iter, init)
 
         fertilities = copy(count_f)
         # recalculate the translation distribution
-        @threads for i in 1:length(Translation_Dict)
+        for i in 1:length(Translation_Dict)
             fre = collect(keys(Translation_Dict))[i]
             for j in 1:length(Translation_Dict[fre])
                 eng = collect(keys(Translation_Dict[fre]))[j]
