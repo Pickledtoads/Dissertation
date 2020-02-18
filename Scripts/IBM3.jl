@@ -142,10 +142,24 @@ function prob(eng,fre,a,dict, align, fert, null)
             # if there are lots of null tokens the "choose" term needs
             # to be found differently
             if length(eng)>(2*phi)
-                nulls = (factorial(length(eng)-phi)/(factorial(phi)*factorial(length(eng)-2*phi)))*null[1]^phi*null[2]^(length(eng)-phi)
+                N = length(eng)-phi
+                x = phi
+                N_x = N-x
+
+                numerator = big((N^0.5)*(N/MathConstants.e)^N)
+                denominator = big(((2*MathConstants.pi*x*N_x)^0.5)*(x/MathConstants.e)^x*(N_x/MathConstants.e)^N_x)
+
+                nulls = (numerator/denominator)*null[1]^phi*null[2]^(length(eng)-phi)
                 fertility += log(nulls)
             else
-                nulls = (factorial(phi+1)/(factorial(2*phi+1-length(eng))*factorial(length(eng)-phi)))*null[1]^phi*null[2]^(length(eng)-phi)
+                N = phi+1
+                x = 2*phi+1-length(eng)
+                N_x = N-x
+
+                numerator = big((N^0.5)*(N/MathConstants.e)^N)
+                denominator = big(((2*MathConstants.pi*x*N_x)^0.5)*(x/MathConstants.e)^x*(N_x/MathConstants.e)^N_x)
+
+                nulls = (numerator/denominator)*null[1]^phi*null[2]^(length(eng)-phi)
                 fertility += log(nulls)
             end
         end
