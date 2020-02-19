@@ -168,7 +168,7 @@ function prob(eng,fre,a,dict, align, fert, null)
                 denominator = 0.5*log(2*MathConstants.pi*x*N_x)+x*log(x/MathConstants.e)+N_x*log(N_x/MathConstants.e)
 
                 nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
-                fertility += nulls
+                fertility += MathConstants.e^nulls
             end
         end
 
@@ -180,14 +180,14 @@ function prob(eng,fre,a,dict, align, fert, null)
     # find the alignment and translation probabilities
     for j in 1:length(eng)
         #println(lex_align)
-        lex = log(dict[fre[a[j]]][eng[j]]*align[j,a[j]])
+        lex = log(dict[fre[a[j]]][eng[j]])+ log(align[j,a[j]])
         if !isinf(lex) & !isnan(lex)
-            lex_align += lex
+            lex_align += MathConstants.e ^ lex
         end
     end
 
     # Return the probability
-    prob = MathConstants.e^(lex_align+fertility)
+    prob = MathConstants.e^(log(lex_align)+log(fertility))
     if prob < 0
         println(prob)
     end

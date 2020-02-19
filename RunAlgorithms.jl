@@ -1,6 +1,6 @@
 
 # Import all required packages
-using HDF5, JLD, Base.Threads
+using HDF5, JLD, Base.Threads, Statistics
 
 French = readlines(joinpath(@__DIR__,"CleanedShortFrench.txt"))
 English = readlines(joinpath(@__DIR__,"CleanedShortEnglish.txt"))
