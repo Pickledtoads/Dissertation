@@ -121,11 +121,8 @@ function prob(eng,fre,a,dict, align, fert, null)
     # Outputs:  The probability of translation - given the input distributions
     # initialise the variables to sum on
     fertility = 0
-    lex_align = 0
-
-    # choose the right alignment table
-    align_key = hcat(string(length(eng)), string(length(fre)))
-    align = align[align_key]
+    lex = 0
+    alignment = 0
 
     # factor in fertility only if we have estimated the
     if fert != false
@@ -168,7 +165,7 @@ function prob(eng,fre,a,dict, align, fert, null)
                 denominator = 0.5*log(2*MathConstants.pi*x*N_x)+x*log(x/MathConstants.e)+N_x*log(N_x/MathConstants.e)
 
                 nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
-                fertility += nulls
+                fertility += MathConstants.e^nulls
             end
         end
 
@@ -177,17 +174,32 @@ function prob(eng,fre,a,dict, align, fert, null)
         fertility = 0
     end
 
-    # find the alignment and translation probabilities
+    # find the distortion/alignment probabilites
+    last_cept = 1
+    for i in 1:length(fre)
+        maps_to = sort([k for (k,v) in a if v==i])
+        fert = length(maps_to)
+        if fert == 1
+            rel_dist = [i-last_cept]
+        else
+            rel_dist = [maps_to[1]-last_cept, maps_to[2:fert]-maps_to[1:(fert-1)]
+        end
+        new = sum(.log(align[fert][rel_dist]))
+        alignment += MathConstants.e^new
+        last_cept = ceil(mean(maps_to))
+    end
+
+    # find the translation probabilities
     for j in 1:length(eng)
         #println(lex_align)
-        lex = log(dict[fre[a[j]]][eng[j]]*align[j,a[j]])
+        lexic = log(dict[fre[a[j]]][eng[j]])
         if !isinf(lex) & !isnan(lex)
-            lex_align += lex
+            lex += MathConstants.e ^ lexic
         end
     end
 
     # Return the probability
-    prob = MathConstants.e^(lex_align+fertility)
+    prob = MathConstants.e^(log(lex)+log(fertility))
     if prob < 0
         println(prob)
     end
