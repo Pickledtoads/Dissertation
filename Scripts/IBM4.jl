@@ -182,9 +182,9 @@ function prob_IBM4(eng,fre,a,dict, align, fert, null)
         if fert == 1
             rel_dist = [i-last_cept]
         else
-            rel_dist = [maps_to[1]-last_cept, maps_to[2:fert]-maps_to[1:(fert-1)]
+            rel_dist = [maps_to[1]-last_cept, maps_to[2:fert]-maps_to[1:(fert-1)]]
         end
-        new = sum(.log(align[fert][rel_dist]))
+        new = sum(log.(align[fert][rel_dist]))
         alignment += MathConstants.e^new
         last_cept = ceil(mean(maps_to))
     end
@@ -252,7 +252,7 @@ function IBM4(Eng, Fre, iter, init)
             c_tot = 0
 
             # Need to calculate this differently after the first iteration
-            if it = 1
+            if it == 1
                 for a in A
                     c_tot += prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])
                 end
@@ -265,7 +265,7 @@ function IBM4(Eng, Fre, iter, init)
             for a in A
                 null = 0
                 # need to use a different prob expression after the first iteration
-                if it = 1
+                if it == 1
                     c = prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
                 else
                     c = prob_IMB4(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
