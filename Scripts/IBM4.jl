@@ -110,7 +110,7 @@ function sample(eng, fre, dict, align,fert,null)
     return(A)
 end
 
-function prob(eng,fre,a,dict, align, fert, null)
+function prob_IBM4(eng,fre,a,dict, align, fert, null)
     # Purpose:  find the probability of a translation using the current distributions
     # Inputs :  eng - English sentence broken into tokens
     #           fre - French sentence broken into tokens
@@ -212,7 +212,7 @@ end
 using Base.Threads
 
 
-function IBM3(Eng, Fre, iter, init)
+function IBM4(Eng, Fre, iter, init)
     # Purpose:  Apply the IBM3 model to the training data
     # Inputs :  Eng - ordered array of all the English sentences
     #           Fre - ordered array of all the French sentences
@@ -228,7 +228,7 @@ function IBM3(Eng, Fre, iter, init)
         count_t = zero_dict(init["trans"]) # translation count
         total_t = Dict(keys(init["trans"]) .=> [0.0]*length(count_t))
 
-        count_d = zero_align(init_Align(Eng, Fre))# distortion counts
+        count_d = Dict()# distortion counts
         total_d = Dict()
 
         count_p1 = 0 # null insertion counts
@@ -243,34 +243,57 @@ function IBM3(Eng, Fre, iter, init)
             if s%100 ==0
                 println(s)
             end
-            eng = Sent_Split(Eng[s],Fre[s])[1]
-            fre = Sent_Split(Eng[s],Fre[s])[2]
-            align_key = hcat(string(length(eng)),string(length(fre)))
+
+            set = Sent_Split(Eng[s],Fre[s])
+            eng = sent[1]
+            fre = sent[2]
 
             A = sample(eng,fre,init["trans"], init["align"], init["fert"], init["null"])
             c_tot = 0
 
-            for a in A
-                c_tot += prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])
+            # Need to calculate this differently after the first iteration
+            if it = 1
+                for a in A
+                    c_tot += prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])
+                end
+            else
+                for a in A
+                    c_tot += prob_IBM4(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])
+                end
             end
 
             for a in A
                 null = 0
-                c = prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
+                # need to use a different prob expression after the first iteration
+                if it = 1
+                    c = prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
+                else
+                    c = prob_IMB4(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
+                end
+
+                cept_centre = 1
                 for e in 1:length(eng)
                     count_t[fre[a[e]]][eng[e]] += c
                     total_t[fre[a[e]]] += c
-                    #println("potatoes")
-                    count_d[align_key][e,a[e]] += c
+
+                    # we now add the count to the rel_distortion counts
+                    maps_to = sort([k for (k,v) in a if v==a[e]])
+                    fert = length(maps_to)
+                    if maps_to[1] == e
+                        rel_dist = e-cept_centre
+                        new_d = Dict(fert=>Dict(rel_dist => c))
+                    else
+                        rel_dist = e-maps_to[(maps_to == e)-1]
+                        new_d = Dict(fert=>Dict(rel_dist => c))
+                    end
+                    count_d = merge(merger_plus, count_d, new_d)
+                    merge!(+,total_d,Dict(fert=>c))
                     if a[e] == (length(fre))
                         null += 1
                     end
+                    cept_centre = ceil(mean(maps_to))
                 end
-                if align_key in keys(total_d)
-                    total_d[align_key] .+= sum(count_d[align_key],dims=1)
-                else
-                    total_d[align_key] = sum(count_d[align_key],dims=1)
-                end
+
                 if !isnan(null*c) & !isnan((length(eng)-2*null)*c)
                     count_p1 += null*c
                     count_p0 += abs(length(eng)-2*null)*c
@@ -290,7 +313,7 @@ function IBM3(Eng, Fre, iter, init)
         # initialise the new distributions
         Translation_Dict = zero_dict(init["trans"])
 
-        alignments = zero_align(count_d)
+        alignments = Dict()
 
         fertilities = copy(count_f)
         # recalculate the translation distribution
@@ -303,13 +326,7 @@ function IBM3(Eng, Fre, iter, init)
         end
         # Recalculate the alignment distribution
         for k in keys(count_d)
-            row = size(count_d[k])[1]
-            col = size(count_d[k])[2]
-            for i in 1:col
-                @threads for j in 1:row
-                    alignments[k][j,i] = count_d[k][j,i]/total_d[k][i]
-                end
-            end
+            alignments[k] = Dict(keys(count_d[k]).=>values(count_d[k])./total_d[k])
         end
         # Recalculate the fertility distribution
         for f in collect(keys(fertilities))

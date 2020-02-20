@@ -4,7 +4,7 @@ using HDF5, JLD, Base.Threads, Statistics
 
 French = readlines(joinpath(@__DIR__,"CleanedShortFrench.txt"))
 English = readlines(joinpath(@__DIR__,"CleanedShortEnglish.txt"))
-n = 2000
+n = 10
 
 include(joinpath(@__DIR__, "Scripts\\UtilityFunctions.jl"))
 include(joinpath(@__DIR__, "Scripts\\IBM_Initialize.jl"))
@@ -37,7 +37,7 @@ include(joinpath(@__DIR__, "Scripts\\IBM2.jl"))
 Name3 = string(joinpath(@__DIR__, "Trained\\"),"IBM2_save_", n, ".jld")
 
 if isfile(Name3)
-    IBM2_save_ = load(Name1)["IBM2_save"]
+    IBM2_save_ = load(Name3)["IBM2_save"]
     println("loaded - IBM2_save" )
 else
     IBM2_save = IBM2(English[1:n], French[1:n], 25, IBM1_save)
@@ -56,4 +56,17 @@ if isfile(Name4)
 else
     IBM3_save = IBM3(English[1:n], French[1:n], 5, IBM2_save)
     save(Name4, "IBM3_save", IBM3_save)
+end
+
+# Aaaaaand IBM4
+include(joinpath(@__DIR__, "Scripts\\IBM4.jl"))
+Name5 = string(joinpath(@__DIR__, "Trained\\"),"IBM4_save_", n, ".jld")
+
+if isfile(Name5)
+    IBM4_save_ = load(Name5)["IBM4_save"]
+    println("loaded - IBM4_save" )
+
+else
+    IBM4_save = IBM3(English[1:n], French[1:n], 5, IBM3_save)
+    save(Name5, "IBM4_save", IBM4_save)
 end
