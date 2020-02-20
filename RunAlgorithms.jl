@@ -4,7 +4,7 @@ using HDF5, JLD, Base.Threads, Statistics
 
 French = readlines(joinpath(@__DIR__,"CleanedShortFrench.txt"))
 English = readlines(joinpath(@__DIR__,"CleanedShortEnglish.txt"))
-n = 10
+n = 2000
 
 include(joinpath(@__DIR__, "Scripts\\UtilityFunctions.jl"))
 include(joinpath(@__DIR__, "Scripts\\IBM_Initialize.jl"))
@@ -58,7 +58,7 @@ else
     save(Name4, "IBM3_save", IBM3_save)
 end
 
-# Aaaaaand IBM4
+# Aaaaaand IBM4 😈
 include(joinpath(@__DIR__, "Scripts\\IBM4.jl"))
 Name5 = string(joinpath(@__DIR__, "Trained\\"),"IBM4_save_", n, ".jld")
 
