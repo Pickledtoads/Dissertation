@@ -239,7 +239,7 @@ function IBM4(Eng, Fre, iter, init)
         for k in keys(init["trans"])
             count_f[k] =  Dict()# fertility counts
         end
-        println("hello")
+
         @threads for s in 1:length(Eng)
             # split up our words
 
@@ -264,7 +264,6 @@ function IBM4(Eng, Fre, iter, init)
                     c_tot += prob_IBM4(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])
                 end
             end
-            println("goodbye")
             for a in A
                 null = 0
                 # need to use a different prob expression after the first iteration
