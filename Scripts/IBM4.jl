@@ -244,7 +244,7 @@ function IBM4(Eng, Fre, iter, init)
                 println(s)
             end
 
-            set = Sent_Split(Eng[s],Fre[s])
+            sent = Sent_Split(Eng[s],Fre[s])
             eng = sent[1]
             fre = sent[2]
 
