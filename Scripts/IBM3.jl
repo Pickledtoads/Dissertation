@@ -234,7 +234,6 @@ function IBM3(Eng, Fre, iter, init)
             eng = Sent_Split(Eng[s],Fre[s])[1]
             fre = Sent_Split(Eng[s],Fre[s])[2]
             align_key = hcat(string(length(eng)),string(length(fre)))
-
             A = sample(eng,fre,init["trans"], init["align"], init["fert"], init["null"])
             c_tot = 0
 
