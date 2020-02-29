@@ -51,7 +51,7 @@ include(joinpath(@__DIR__, "Scripts\\IBM3.jl"))
 Name4 = string(joinpath(@__DIR__, "Trained\\"),"IBM3_save_", n, ".jld")
 
 if isfile(Name4)
-    IBM3_save = load(Name1)["IBM3_save"]
+    IBM3_save = load(Name4)["IBM3_save"]
     println("loaded - IBM3_save" )
 
 else

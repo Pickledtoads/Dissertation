@@ -184,7 +184,9 @@ function prob_IBM4(eng,fre,a,dict, align, fert, null)
         else
             rel_dist = [maps_to[1]-last_cept, maps_to[2:fert]-maps_to[1:(fert-1)]]
         end
+        println(rel_dist)
         new = sum(log.(align[fert][rel_dist]))
+        println("Waggle")
         alignment += MathConstants.e^new
         last_cept = ceil(mean(maps_to))
     end
@@ -268,7 +270,7 @@ function IBM4(Eng, Fre, iter, init)
                 if it == 1
                     c = prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
                 else
-                    c = prob_IMB4(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
+                    c = prob_IBM4(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
                 end
 
                 cept_centre = 1
