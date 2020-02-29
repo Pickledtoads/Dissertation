@@ -4,7 +4,7 @@ using HDF5, JLD, Base.Threads, Statistics
 
 French = readlines(joinpath(@__DIR__,"CleanedShortFrench.txt"))
 English = readlines(joinpath(@__DIR__,"CleanedShortEnglish.txt"))
-n = 2000
+n = 10
 
 include(joinpath(@__DIR__, "Scripts\\UtilityFunctions.jl"))
 include(joinpath(@__DIR__, "Scripts\\IBM_Initialize.jl"))
@@ -51,7 +51,7 @@ include(joinpath(@__DIR__, "Scripts\\IBM3.jl"))
 Name4 = string(joinpath(@__DIR__, "Trained\\"),"IBM3_save_", n, ".jld")
 
 if isfile(Name4)
-    IBM3_save_ = load(Name1)["IBM3_save"]
+    IBM3_save = load(Name1)["IBM3_save"]
     println("loaded - IBM3_save" )
 
 else
@@ -68,6 +68,20 @@ if isfile(Name5)
     println("loaded - IBM4_save" )
 
 else
-    IBM4_save = IBM3(English[1:n], French[1:n], 5, IBM3_save)
+    IBM4_save = IBM4(English[1:n], French[1:n], 5, IBM3_save)
     save(Name5, "IBM4_save", IBM4_save)
+end
+
+
+# Finally IBM5 🍰
+include(joinpath(@__DIR__, "Scripts\\IBM5.jl"))
+Name6 = string(joinpath(@__DIR__, "Trained\\"),"IBM5_save_", n, ".jld")
+
+if isfile(Name6)
+    IBM5_save_ = load(Name6)["IBM5_save"]
+    println("loaded - IBM5_save" )
+
+else
+    IBM5_save = IBM5(English[1:n], French[1:n], 5, IBM4_save, IBM3_save["align"])
+    save(Name6, "IBM5_save", IBM5_save)
 end

@@ -68,6 +68,8 @@ function neighboring(a, jp, lens)
 end
 
 
+# I chose to base the initial alignment on the IBM 3 alignment function
+# Finding the best starting point based on the IBM 4 is too computationally intensive.
 function sample(eng, fre, dict, align,fert,null)
     # Purpose:  Produces a sample from the space of alignment functions
     # Inputs :  eng - English sentence broken into tokens
@@ -110,7 +112,7 @@ function sample(eng, fre, dict, align,fert,null)
     return(A)
 end
 
-function prob_IBM4(eng,fre,a,dict, align, fert, null)
+function prob_IBM5(eng,fre,a,dict, align, fert, null)
     # Purpose:  find the probability of a translation using the current distributions
     # Inputs :  eng - English sentence broken into tokens
     #           fre - French sentence broken into tokens
@@ -176,17 +178,28 @@ function prob_IBM4(eng,fre,a,dict, align, fert, null)
 
     # find the distortion/alignment probabilites
     last_cept = 1
+    Filled = repeat("", length(eng))
     for i in 1:length(fre)
         maps_to = sort([k for (k,v) in a if v==i])
         fert = length(maps_to)
-        if fert == 1
-            rel_dist = [i-last_cept]
-        else
-            rel_dist = [maps_to[1]-last_cept, maps_to[2:fert]-maps_to[1:(fert-1)]]
+        vacmax = length(Filled[Filled == ""])
+        if fert>0
+            for words in maps_to
+                no_vac_to_cept = length(Filled[Filled[1:last_cept] == ""])
+                no_vac_to_pos = length(Filled[Filled[1:words] == ""])
+                if maps_to[1]!=words
+                    no_vac_to_pos = no_vac_to_pos-length(Filled[Filled[1:maps_to[1]] == ""])
+                end
+                new = sum(log.(align[fert][vacmax][no_vac_to_cept][no_vac_to_pos]))
+                alignment += MathConstants.e^new
+                Filled[words] = words
+                vacmax -= 1
+            end
+
+            last_cept = ceil(mean(maps_to))
         end
-        new = sum(log.(align[fert][rel_dist]))
-        alignment += MathConstants.e^new
-        last_cept = ceil(mean(maps_to))
+
+
     end
 
     # find the translation probabilities
@@ -211,8 +224,7 @@ end
 
 using Base.Threads
 
-
-function IBM4(Eng, Fre, iter, init)
+function IBM5(Eng, Fre, iter, init, IBM3_align)
     # Purpose:  Apply the IBM3 model to the training data
     # Inputs :  Eng - ordered array of all the English sentences
     #           Fre - ordered array of all the French sentences
@@ -248,7 +260,7 @@ function IBM4(Eng, Fre, iter, init)
             eng = sent[1]
             fre = sent[2]
 
-            A = sample(eng,fre,init["trans"], init["align"], init["fert"], init["null"])
+            A = sample(eng,fre,init["trans"], IBM3_align, init["fert"], init["null"])
             c_tot = 0
 
             # Need to calculate this differently after the first iteration
@@ -266,9 +278,9 @@ function IBM4(Eng, Fre, iter, init)
                 null = 0
                 # need to use a different prob expression after the first iteration
                 if it == 1
-                    c = prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
+                    c = prob_IBM4(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
                 else
-                    c = prob_IMB4(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
+                    c = prob_IMB5(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
                 end
 
                 cept_centre = 1
@@ -276,23 +288,41 @@ function IBM4(Eng, Fre, iter, init)
                     count_t[fre[a[e]]][eng[e]] += c
                     total_t[fre[a[e]]] += c
 
-                    # we now add the count to the rel_distortion counts
-                    maps_to = sort([k for (k,v) in a if v==a[e]])
-                    fert = length(maps_to)
-                    if maps_to[1] == e
-                        rel_dist = e-cept_centre
-                        new_d = Dict(fert=>Dict(rel_dist => c))
-                    else
-                        rel_dist = e-maps_to[(maps_to == e)-1]
-                        new_d = Dict(fert=>Dict(rel_dist => c))
-                    end
-                    count_d = merge(merger_plus, count_d, new_d)
-                    merge!(+,total_d,Dict(fert=>c))
                     if a[e] == (length(fre))
                         null += 1
                     end
-                    cept_centre = ceil(mean(maps_to))
                 end
+                    # we now add the count to the rel_distortion counts
+                    last_cept = 1
+                    Filled = repeat("", length(eng))
+                    for i in 1:length(fre)
+                        maps_to = sort([k for (k,v) in a if v==i])
+                        fert = length(maps_to)
+                        vacmax = length(Filled[Filled == ""])
+                        if fert>0
+                            for words in maps_to
+                                no_vac_to_cept = length(Filled[Filled[1:last_cept] == ""])
+                                no_vac_to_pos = length(Filled[Filled[1:words] == ""])
+                                if maps_to[1]!=words
+                                    no_vac_to_pos = no_vac_to_pos-length(Filled[Filled[1:maps_to[1]] == ""])
+                                end
+                                [vacmax][no_vac_to_cept][no_vac_to_pos]
+                                new = Dict(fert=>Dict(vacmax=>Dict(no_vac_to_cept=>Dict(no_vac_to_pos=>c))))
+                                try
+                                    count_d[fert][vacmax][no_vac_to_cept][no_vac_to_pos] += c
+                                    total_d[fert][vacmax][no_vac_to_cept] += c
+                                catch
+                                    count_d[fert][vacmax][no_vac_to_cept][no_vac_to_pos] = c
+                                    total_d[fert][vacmax][no_vac_to_cept] = c
+                                end
+
+                                Filled[words] = words
+                                vacmax -= 1
+                            end
+
+                            last_cept = ceil(mean(maps_to))
+                        end
+                    end
 
                 if !isnan(null*c) & !isnan((length(eng)-2*null)*c)
                     count_p1 += null*c
@@ -325,8 +355,12 @@ function IBM4(Eng, Fre, iter, init)
             end
         end
         # Recalculate the alignment distribution
-        for k in keys(count_d)
-            alignments[k] = Dict(keys(count_d[k]).=>values(count_d[k])./total_d[k])
+        for k1 in keys(count_d)
+            for k2 in keys(count_d[k1])
+                for k3 in keys(count_d[k1][k2])
+                    alignments[k1][k2][k3] = Dict(keys(count_d[k1][k2][k3]).=>values(count_d[k1][k2][k3])./total_d[k1][k2][k3])
+                end
+            end
         end
         # Recalculate the fertility distribution
         for f in collect(keys(fertilities))
