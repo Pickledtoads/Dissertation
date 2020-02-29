@@ -239,9 +239,10 @@ function IBM4(Eng, Fre, iter, init)
         for k in keys(init["trans"])
             count_f[k] =  Dict()# fertility counts
         end
-
+        println("hello")
         @threads for s in 1:length(Eng)
             # split up our words
+
             if s%100 ==0
                 println(s)
             end
@@ -263,7 +264,7 @@ function IBM4(Eng, Fre, iter, init)
                     c_tot += prob_IBM4(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])
                 end
             end
-
+            println("goodbye")
             for a in A
                 null = 0
                 # need to use a different prob expression after the first iteration
@@ -285,7 +286,7 @@ function IBM4(Eng, Fre, iter, init)
                         rel_dist = e-cept_centre
                         new_d = Dict(fert=>Dict(rel_dist => c))
                     else
-                        rel_dist = e-maps_to[(maps_to == e)-1]
+                        rel_dist = e-maps_to[findall(x->x==e, maps_to)[1] - 1]
                         new_d = Dict(fert=>Dict(rel_dist => c))
                     end
                     count_d = merge(merger_plus, count_d, new_d)
