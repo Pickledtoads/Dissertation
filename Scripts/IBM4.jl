@@ -215,55 +215,49 @@ function prob_IBM4(eng,fre,a,dict, align, fert, null)
     lex = 0
     alignment = 0
 
-    # factor in fertility only if we have estimated the
-    if fert != false
-
     # find the probability associated with fertility
-        for i in 1:length(fre)
-            f = length([k for (k,v) in a if v==i])
+    for i in 1:length(fre)
+        f = length([k for (k,v) in a if v==i])
 
-            # Calculate the fertility probabilities
-            if f in keys(fert[fre[i]])
-                fertility+=MathConstants.e^log(factorial(f)*fert[fre[i]][f])
-            end
-
-            phi = length([k for (k,v) in a if v==length(fre)])
-            # if there are lots of null tokens the "choose" term needs
-            # to be found differently
-
-            if length(eng)>(2*phi)
-                N = length(eng)-phi
-                x = phi
-                N_x = N-x
-
-                numerator = 0.5*log(2*MathConstants.pi*N)+N*log(N/MathConstants.e)
-
-                if x != 0
-                    denominator = 0.5*log(2*MathConstants.pi*x)+0.5*log(2*MathConstants.pi*N_x)+x*log(x/MathConstants.e)+N_x*log(N_x/MathConstants.e)
-                elseif x == 0
-                    denominator = 0.5*log(2*MathConstants.pi*N_x)+N_x*log(N_x/MathConstants.e)
-                end
-
-
-                nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
-                fertility += MathConstants.e^nulls
-            else
-                N = phi+1
-                x = 2*phi+1-length(eng)
-                N_x = N-x
-
-                numerator = 0.5*log(N)+N*log(N/MathConstants.e)
-                denominator = 0.5*log(2*MathConstants.pi*x*N_x)+x*log(x/MathConstants.e)+N_x*log(N_x/MathConstants.e)
-
-                nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
-                fertility += MathConstants.e^nulls
-            end
+        # Calculate the fertility probabilities
+        if f in keys(fert[fre[i]])
+            fertility+=MathConstants.e^log(factorial(f)*fert[fre[i]][f])
         end
 
-    # If we have not yet found fertility probabilities
-    else
-        fertility = 0
+        phi = length([k for (k,v) in a if v==length(fre)])
+        # if there are lots of null tokens the "choose" term needs
+        # to be found differently
+
+        if length(eng)>(2*phi)
+            N = length(eng)-phi
+            x = phi
+            N_x = N-x
+
+            numerator = 0.5*log(2*MathConstants.pi*N)+N*log(N/MathConstants.e)
+
+            if x != 0
+                denominator = 0.5*log(2*MathConstants.pi*x)+0.5*log(2*MathConstants.pi*N_x)+x*log(x/MathConstants.e)+N_x*log(N_x/MathConstants.e)
+            elseif x == 0
+                denominator = 0.5*log(2*MathConstants.pi*N_x)+N_x*log(N_x/MathConstants.e)
+            end
+
+
+            nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
+            fertility += MathConstants.e^nulls
+        else
+            N = phi+1
+            x = 2*phi+1-length(eng)
+            N_x = N-x
+
+            numerator = 0.5*log(N)+N*log(N/MathConstants.e)
+            denominator = 0.5*log(2*MathConstants.pi*x*N_x)+x*log(x/MathConstants.e)+N_x*log(N_x/MathConstants.e)
+
+            nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
+            fertility += MathConstants.e^nulls
+        end
     end
+
+
 
     # find the distortion/alignment probabilites
     last_cept = 1

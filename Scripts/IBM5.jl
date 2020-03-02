@@ -49,7 +49,6 @@ function neighboring(a, jp, lens)
     notpegged = setdiff(1:lens[1], jp)
     for j in notpegged
         for i in 1:lens[2]
-            #println([j,i])
             a_new = copy(a)
             a_new[j] = i
             push!(N,a_new)
@@ -63,7 +62,6 @@ function neighboring(a, jp, lens)
             push!(N, a_new)
         end
     end
-    #println(N)
     return(N)
 end
 
@@ -135,7 +133,7 @@ function prob_IBM5(eng,fre,a,dict, align, fert, null)
 
             # Calculate the fertility probabilities
             if f in keys(fert[fre[i]])
-                fertility+=log(factorial(f)*fert[fre[i]][f])
+                fertility+=MathConstants.e^(log(factorial(f)*fert[fre[i]][f]))
             end
 
             phi = length([k for (k,v) in a if v==length(fre)])
@@ -157,7 +155,7 @@ function prob_IBM5(eng,fre,a,dict, align, fert, null)
 
 
                 nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
-                fertility += nulls
+                fertility += MathConstants.e^nulls
             else
                 N = phi+1
                 x = 2*phi+1-length(eng)
@@ -208,7 +206,6 @@ function prob_IBM5(eng,fre,a,dict, align, fert, null)
 
     # find the translation probabilities
     for j in 1:length(eng)
-        #println(lex_align)
         lexic = log(dict[fre[a[j]]][eng[j]])
         if !isinf(lex) & !isnan(lex)
             lex += MathConstants.e ^ lexic
@@ -228,6 +225,7 @@ end
 
 using Base.Threads
 
+
 function IBM5(Eng, Fre, iter, init, samp_align)
     # Purpose:  Apply the IBM3 model to the training data
     # Inputs :  Eng - ordered array of all the English sentences
@@ -237,7 +235,7 @@ function IBM5(Eng, Fre, iter, init, samp_align)
     # Outputs:  A dictionary containing translation, alignment, fertility
     #           and null insertion probabilities
 
-    init = Dict("trans"=>copy(init["trans"]),"align"=>copy(init["align"]), "fert"=>false, "null"=>false)
+    init = Dict("trans"=>copy(init["trans"]),"align"=>copy(init["align"]), "fert"=>copy(init["fert"]), "null"=>copy(init["null"]))
 
     for it in 1:iter
         # initialise the count variables
@@ -254,7 +252,7 @@ function IBM5(Eng, Fre, iter, init, samp_align)
             count_f[k] =  Dict()# fertility counts
         end
 
-        for s in 1:length(Eng)
+        @threads for s in 1:length(Eng)
             # split up our words
             if s%100 ==0
                 println(s)
@@ -264,7 +262,7 @@ function IBM5(Eng, Fre, iter, init, samp_align)
             eng = sent[1]
             fre = sent[2]
 
-            A = sample(eng,fre,init["trans"], samp_align, init["fert"], init["null"])
+            A = sample(eng, fre,init["trans"], samp_align, init["fert"], init["null"])
             c_tot = 0
 
             # Need to calculate this differently after the first iteration
@@ -282,7 +280,7 @@ function IBM5(Eng, Fre, iter, init, samp_align)
                 null = 0
                 # need to use a different prob expression after the first iteration
                 if it == 1
-                    c = prob_IBM4(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
+                    c = prob_IBM4(eng, fre, a, init["trans"],init["align"], init["fert"], init["null"])/c_tot
                 else
                     c = prob_IBM5(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
                 end
@@ -316,12 +314,26 @@ function IBM5(Eng, Fre, iter, init, samp_align)
                                     count_d[fert][vacmax][no_vac_to_cept][no_vac_to_pos] += c
                                     total_d[fert][vacmax][no_vac_to_cept] += c
                                 catch
-                                    new_d = Dict(fert=>Dict(vacmax=>Dict(no_vac_to_cept=>Dict(no_vac_to_pos=>0.0))))
-                                    merge!(count_d,new_d)
-                                    new_dt = Dict(fert=>Dict(vacmax=>Dict(no_vac_to_cept=>0.0)))
-                                    merge!(total_d,new_dt)
-                                    count_d[fert][vacmax][no_vac_to_cept][no_vac_to_pos] += c
-                                    total_d[fert][vacmax][no_vac_to_cept] += c
+                                    new = Dict(no_vac_to_pos=>c)
+                                    if fert in keys(count_d)
+
+
+                                        if vacmax in keys(count_d[fert])
+                                            count_d[fert][vacmax] = merge(merger_plus, count_d[fert][vacmax],Dict(no_vac_to_cept=>new))
+                                            total_d[fert][vacmax] = merge(+,total_d[fert][vacmax],Dict(no_vac_to_cept=>c))
+                                        else
+                                            new_d = Dict(vacmax=>Dict(no_vac_to_cept=>Dict(no_vac_to_pos=>c)))
+                                            count_d[fert]= merge(count_d[fert],new_d)
+                                            new_dt = Dict(vacmax=>Dict(no_vac_to_cept=>c))
+                                            total_d[fert]=merge(total_d[fert],new_dt)
+                                        end
+
+                                    else
+                                        new_d = Dict(fert=>Dict(vacmax=>Dict(no_vac_to_cept=>Dict(no_vac_to_pos=>c))))
+                                        merge!(count_d,new_d)
+                                        new_dt = Dict(fert=>Dict(vacmax=>Dict(no_vac_to_cept=>c)))
+                                        merge!(total_d,new_dt)
+                                    end
                                 end
 
                                 Filled[words] = "word;)"

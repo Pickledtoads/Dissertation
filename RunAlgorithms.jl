@@ -65,25 +65,21 @@ end
 # Aaaaaand IBM4 😈
 include(joinpath(@__DIR__, "Scripts\\IBM4.jl"))
 Name5 = string(joinpath(@__DIR__, "Trained\\"),"IBM4_save_", n, ".jld")
-IBM4_save = IBM4(English[1:n], French[1:n], 10, IBM3_save, IBM3_save["align"])
-println(IBM4_save["align"])
 
 
 
 if isfile(Name5)
-    IBM4_save_ = load(Name5)["IBM4_save"]
+    IBM4_save = load(Name5)["IBM4_save"]
     println("loaded - IBM4_save" )
 
 else
     IBM4_save = IBM4(English[1:n], French[1:n], 5, IBM3_save, IBM3_save["align"])
     save(Name5, "IBM4_save", IBM4_save)
 end
-
+println(IBM4_save["align"])
 
 # Finally IBM5 🍰
 include(joinpath(@__DIR__, "Scripts\\IBM5.jl"))
-IBM5_save = IBM5(English[1:n], French[1:n], 5, IBM4_save, IBM3_save["align"])
-
 Name6 = string(joinpath(@__DIR__, "Trained\\"),"IBM5_save_", n, ".jld")
 
 if isfile(Name6)
