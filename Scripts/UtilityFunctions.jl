@@ -9,18 +9,6 @@ function merger_plus(a,b)
     return(merge(+,a,b))
 end
 
-
-function merger_plus1(a,b)
-    # Purpose:  To correctly sum probabilites within dictionaries of dictionaries
-    #           we produce a dictionary for each french word showing the prob of
-    #           each english translation. merger_plus allows us to correctly merge
-    #           a new dictionary of prob counts with this overarching dictionary
-    # Inputs :  a - a dictionary of dictionaries
-    #           b - a dictionary
-    # Outputs:  the result of merging the
-    return(println([a,b]))
-end
-
 function Sent_Split(y, x)
     # Purpose: Divide the French and English sentences up into words and add the null token
     # Inputs : y - a string containing the space-separated English sentence

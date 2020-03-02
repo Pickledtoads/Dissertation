@@ -178,25 +178,29 @@ function prob_IBM5(eng,fre,a,dict, align, fert, null)
 
     # find the distortion/alignment probabilites
     last_cept = 1
-    Filled = repeat("", length(eng))
+    Filled = repeat([""], length(eng))
     for i in 1:length(fre)
         maps_to = sort([k for (k,v) in a if v==i])
         fert = length(maps_to)
-        vacmax = length(Filled[Filled == ""])
+        vacmax = length(Filled)
         if fert>0
             for words in maps_to
-                no_vac_to_cept = length(Filled[Filled[1:last_cept] == ""])
-                no_vac_to_pos = length(Filled[Filled[1:words] == ""])
+                no_vac_to_cept = length(findall(x->x=="", Filled[1:last_cept]))
+                no_vac_to_pos = length(findall(x->x=="", Filled[1:words]))
                 if maps_to[1]!=words
-                    no_vac_to_pos = no_vac_to_pos-length(Filled[Filled[1:maps_to[1]] == ""])
+                    no_vac_to_pos = no_vac_to_pos-length(Filled[findall(x->x=="",Filled[1:maps_to[1]])])
                 end
-                new = sum(log.(align[fert][vacmax][no_vac_to_cept][no_vac_to_pos]))
-                alignment += MathConstants.e^new
-                Filled[words] = words
+                try
+                    new = sum(log.(align[fert][vacmax][no_vac_to_cept][no_vac_to_pos]))
+                    alignment += MathConstants.e^new
+                catch
+
+                end
+                Filled[words] = "word"
                 vacmax -= 1
             end
 
-            last_cept = ceil(mean(maps_to))
+            last_cept = convert(Integer,ceil(mean(maps_to)))
         end
 
 
@@ -224,7 +228,7 @@ end
 
 using Base.Threads
 
-function IBM5(Eng, Fre, iter, init, IBM3_align)
+function IBM5(Eng, Fre, iter, init, samp_align)
     # Purpose:  Apply the IBM3 model to the training data
     # Inputs :  Eng - ordered array of all the English sentences
     #           Fre - ordered array of all the French sentences
@@ -243,34 +247,34 @@ function IBM5(Eng, Fre, iter, init, IBM3_align)
         count_d = Dict()# distortion counts
         total_d = Dict()
 
-        count_p1 = 0 # null insertion counts
+        count_p1 = 0 # null insertio counts
         count_p0 = 0
         count_f = Dict()
         for k in keys(init["trans"])
             count_f[k] =  Dict()# fertility counts
         end
 
-        @threads for s in 1:length(Eng)
+        for s in 1:length(Eng)
             # split up our words
             if s%100 ==0
                 println(s)
             end
 
-            set = Sent_Split(Eng[s],Fre[s])
+            sent = Sent_Split(Eng[s],Fre[s])
             eng = sent[1]
             fre = sent[2]
 
-            A = sample(eng,fre,init["trans"], IBM3_align, init["fert"], init["null"])
+            A = sample(eng,fre,init["trans"], samp_align, init["fert"], init["null"])
             c_tot = 0
 
             # Need to calculate this differently after the first iteration
             if it == 1
                 for a in A
-                    c_tot += prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])
+                    c_tot += prob(eng,fre,a,init["trans"],samp_align, init["fert"], init["null"])
                 end
             else
                 for a in A
-                    c_tot += prob_IBM4(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])
+                    c_tot += prob_IBM5(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])
                 end
             end
 
@@ -280,7 +284,7 @@ function IBM5(Eng, Fre, iter, init, IBM3_align)
                 if it == 1
                     c = prob_IBM4(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
                 else
-                    c = prob_IMB5(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
+                    c = prob_IBM5(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
                 end
 
                 cept_centre = 1
@@ -294,33 +298,37 @@ function IBM5(Eng, Fre, iter, init, IBM3_align)
                 end
                     # we now add the count to the rel_distortion counts
                     last_cept = 1
-                    Filled = repeat("", length(eng))
+                    Filled = repeat([""], length(eng))
                     for i in 1:length(fre)
                         maps_to = sort([k for (k,v) in a if v==i])
                         fert = length(maps_to)
-                        vacmax = length(Filled[Filled == ""])
+                        vacmax = length(Filled)
                         if fert>0
                             for words in maps_to
-                                no_vac_to_cept = length(Filled[Filled[1:last_cept] == ""])
-                                no_vac_to_pos = length(Filled[Filled[1:words] == ""])
+                                no_vac_to_cept = length(findall(x->x=="", Filled[1:last_cept]))
+                                no_vac_to_pos = length(findall(x->x=="", Filled[1:words]))
                                 if maps_to[1]!=words
-                                    no_vac_to_pos = no_vac_to_pos-length(Filled[Filled[1:maps_to[1]] == ""])
+
+                                    no_vac_to_pos = no_vac_to_pos-length(findall(x->x=="", Filled[1:maps_to[1]]))
                                 end
-                                [vacmax][no_vac_to_cept][no_vac_to_pos]
                                 new = Dict(fert=>Dict(vacmax=>Dict(no_vac_to_cept=>Dict(no_vac_to_pos=>c))))
                                 try
                                     count_d[fert][vacmax][no_vac_to_cept][no_vac_to_pos] += c
                                     total_d[fert][vacmax][no_vac_to_cept] += c
                                 catch
-                                    count_d[fert][vacmax][no_vac_to_cept][no_vac_to_pos] = c
-                                    total_d[fert][vacmax][no_vac_to_cept] = c
+                                    new_d = Dict(fert=>Dict(vacmax=>Dict(no_vac_to_cept=>Dict(no_vac_to_pos=>0.0))))
+                                    merge!(count_d,new_d)
+                                    new_dt = Dict(fert=>Dict(vacmax=>Dict(no_vac_to_cept=>0.0)))
+                                    merge!(total_d,new_dt)
+                                    count_d[fert][vacmax][no_vac_to_cept][no_vac_to_pos] += c
+                                    total_d[fert][vacmax][no_vac_to_cept] += c
                                 end
 
-                                Filled[words] = words
+                                Filled[words] = "word;)"
                                 vacmax -= 1
                             end
 
-                            last_cept = ceil(mean(maps_to))
+                            last_cept = convert(Integer,ceil(mean(maps_to)))
                         end
                     end
 
@@ -358,6 +366,7 @@ function IBM5(Eng, Fre, iter, init, IBM3_align)
         for k1 in keys(count_d)
             for k2 in keys(count_d[k1])
                 for k3 in keys(count_d[k1][k2])
+                    merge!(alignments, Dict(k1=>Dict(k2=>Dict(k3=>Dict()))))
                     alignments[k1][k2][k3] = Dict(keys(count_d[k1][k2][k3]).=>values(count_d[k1][k2][k3])./total_d[k1][k2][k3])
                 end
             end

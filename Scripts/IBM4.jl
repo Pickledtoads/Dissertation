@@ -49,7 +49,6 @@ function neighboring(a, jp, lens)
     notpegged = setdiff(1:lens[1], jp)
     for j in notpegged
         for i in 1:lens[2]
-            #println([j,i])
             a_new = copy(a)
             a_new[j] = i
             push!(N,a_new)
@@ -63,7 +62,6 @@ function neighboring(a, jp, lens)
             push!(N, a_new)
         end
     end
-    #println(N)
     return(N)
 end
 
@@ -81,7 +79,9 @@ function sample(eng, fre, dict, align,fert,null)
 
     # select the appropriate alignment distribution
     a = Dict()
+
     align_key = hcat(string(length(eng)),string(length(fre)))
+
     align_dist = align[align_key]
     A = []
 
@@ -110,6 +110,97 @@ function sample(eng, fre, dict, align,fert,null)
     return(A)
 end
 
+function prob(eng,fre,a,dict, align, fert, null)
+    # Purpose:  find the probability of a translation using the current distributions
+    # Inputs :  eng - English sentence broken into tokens
+    #           fre - French sentence broken into tokens
+    #           dict - lexical probability distribution
+    #           align - aligment distribution
+    #           fert - fertility distribution
+    #           null - null insertion distribution
+    # Outputs:  The probability of translation - given the input distributions
+    # initialise the variables to sum on
+    fertility = 0
+    lex_align = 0
+
+    # choose the right alignment table
+    align_key = hcat(string(length(eng)), string(length(fre)))
+    align = align[align_key]
+
+    # factor in fertility only if we have estimated the
+    if fert != false
+
+    # find the probability associated with fertility
+        for i in 1:length(fre)
+            f = length([k for (k,v) in a if v==i])
+
+            # Calculate the fertility probabilities
+            if f in keys(fert[fre[i]])
+                fertility+=MathConstants.e^log(factorial(f)*fert[fre[i]][f])
+            end
+
+            phi = length([k for (k,v) in a if v==length(fre)])
+            # if there are lots of null tokens the "choose" term needs
+            # to be found differently
+
+            if length(eng)>(2*phi)
+                N = length(eng)-phi
+                x = phi
+                N_x = N-x
+
+                numerator = 0.5*log(2*MathConstants.pi*N)+N*log(N/MathConstants.e)
+
+                if x != 0
+                    denominator = 0.5*log(2*MathConstants.pi*x)+0.5*log(2*MathConstants.pi*N_x)+x*log(x/MathConstants.e)+N_x*log(N_x/MathConstants.e)
+                elseif x == 0
+                    denominator = 0.5*log(2*MathConstants.pi*N_x)+N_x*log(N_x/MathConstants.e)
+                end
+
+
+                nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
+                fertility += MathConstants.e^nulls
+            else
+                N = phi+1
+                x = 2*phi+1-length(eng)
+                N_x = N-x
+
+                numerator = 0.5*log(N)+N*log(N/MathConstants.e)
+                denominator = 0.5*log(2*MathConstants.pi*x*N_x)+x*log(x/MathConstants.e)+N_x*log(N_x/MathConstants.e)
+
+                nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
+                fertility += MathConstants.e^nulls
+            end
+        end
+
+    # If we have not yet found fertility probabilities
+    else
+        fertility = 1
+    end
+
+    # find the alignment and translation probabilities
+    for j in 1:length(eng)
+        lex = log(dict[fre[a[j]]][eng[j]])+ log(align[j,a[j]])
+
+        if !isinf(lex) & !isnan(lex)
+            lex_align += MathConstants.e ^ lex
+        end
+    end
+
+    # Return the probability
+    prob = MathConstants.e^(log(lex_align)+log(fertility))
+    if prob < 0
+        println(prob)
+    end
+
+    return(prob)
+
+end
+
+
+using Base.Threads
+
+
+
 function prob_IBM4(eng,fre,a,dict, align, fert, null)
     # Purpose:  find the probability of a translation using the current distributions
     # Inputs :  eng - English sentence broken into tokens
@@ -133,7 +224,7 @@ function prob_IBM4(eng,fre,a,dict, align, fert, null)
 
             # Calculate the fertility probabilities
             if f in keys(fert[fre[i]])
-                fertility+=log(factorial(f)*fert[fre[i]][f])
+                fertility+=MathConstants.e^log(factorial(f)*fert[fre[i]][f])
             end
 
             phi = length([k for (k,v) in a if v==length(fre)])
@@ -155,7 +246,7 @@ function prob_IBM4(eng,fre,a,dict, align, fert, null)
 
 
                 nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
-                fertility += nulls
+                fertility += MathConstants.e^nulls
             else
                 N = phi+1
                 x = 2*phi+1-length(eng)
@@ -181,19 +272,39 @@ function prob_IBM4(eng,fre,a,dict, align, fert, null)
         fert = length(maps_to)
         if fert == 1
             rel_dist = [i-last_cept]
-        else
-            rel_dist = [maps_to[1]-last_cept, maps_to[2:fert]-maps_to[1:(fert-1)]]
+            new = []
+            for e in rel_dist
+                try
+                    push!(new, align[fert][e])
+                catch
+                    print([fert,e])
+                end
+            end
+
+            new = sum(log.(new))
+            alignment += MathConstants.e^new
+            last_cept = convert(Integer,ceil(mean(maps_to)))
+        elseif fert>1
+            rel_dist = vcat(maps_to[1]-last_cept, maps_to[2:fert]-maps_to[1:(fert-1)])
+            new = []
+            for e in rel_dist
+                try
+                    push!(new, align[convert(Integer,fert)][convert(Integer,e)])
+                catch
+                    print([fert,e])
+                end
+
+            end
+
+            new = sum(log.(new))
+            alignment += MathConstants.e^new
+            last_cept = convert(Integer,ceil(mean(maps_to)))
         end
-        println(rel_dist)
-        new = sum(log.(align[fert][rel_dist]))
-        println("Waggle")
-        alignment += MathConstants.e^new
-        last_cept = ceil(mean(maps_to))
+
     end
 
     # find the translation probabilities
     for j in 1:length(eng)
-        #println(lex_align)
         lexic = log(dict[fre[a[j]]][eng[j]])
         if !isinf(lex) & !isnan(lex)
             lex += MathConstants.e ^ lexic
@@ -214,7 +325,7 @@ end
 using Base.Threads
 
 
-function IBM4(Eng, Fre, iter, init)
+function IBM4(Eng, Fre, iter, init, samp_align)
     # Purpose:  Apply the IBM3 model to the training data
     # Inputs :  Eng - ordered array of all the English sentences
     #           Fre - ordered array of all the French sentences
@@ -250,8 +361,7 @@ function IBM4(Eng, Fre, iter, init)
             sent = Sent_Split(Eng[s],Fre[s])
             eng = sent[1]
             fre = sent[2]
-
-            A = sample(eng,fre,init["trans"], init["align"], init["fert"], init["null"])
+            A = sample(eng,fre,init["trans"], samp_align, init["fert"], init["null"])
             c_tot = 0
 
             # Need to calculate this differently after the first iteration
@@ -278,22 +388,35 @@ function IBM4(Eng, Fre, iter, init)
                     count_t[fre[a[e]]][eng[e]] += c
                     total_t[fre[a[e]]] += c
 
-                    # we now add the count to the rel_distortion counts
-                    maps_to = sort([k for (k,v) in a if v==a[e]])
-                    fert = length(maps_to)
-                    if maps_to[1] == e
-                        rel_dist = e-cept_centre
-                        new_d = Dict(fert=>Dict(rel_dist => c))
-                    else
-                        rel_dist = e-maps_to[findall(x->x==e, maps_to)[1] - 1]
-                        new_d = Dict(fert=>Dict(rel_dist => c))
-                    end
-                    count_d = merge(merger_plus, count_d, new_d)
-                    merge!(+,total_d,Dict(fert=>c))
+
                     if a[e] == (length(fre))
                         null += 1
                     end
-                    cept_centre = ceil(mean(maps_to))
+
+                end
+                cept_centre = 1
+                for f in 1:length(fre)
+                    # we now add the count to the rel_distortion counts
+                    maps_to = sort([k for (k,v) in a if v==f])
+                    fert = length(maps_to)
+
+                    if fert >0
+                        new_d = 0
+                        for j in 1:length(maps_to)
+                            if j>1
+                                rel_dist = maps_to[j]-maps_to[findall(x->x==maps_to[j], maps_to)[1] - 1]
+                                new_d = Dict(fert=>Dict(rel_dist => c))
+
+                            else
+                                rel_dist = maps_to[j] - cept_centre
+                                new_d = Dict(fert=>Dict(rel_dist => c))
+                            end
+                            count_d = merge(merger_plus, count_d, new_d)
+                            merge!(+,total_d,Dict(fert=>c))
+                        end
+
+                        cept_centre = convert(Integer,ceil(mean(maps_to)))
+                    end
                 end
 
                 if !isnan(null*c) & !isnan((length(eng)-2*null)*c)
@@ -338,6 +461,7 @@ function IBM4(Eng, Fre, iter, init)
         p1 = count_p1/(count_p1+count_p0)
         p0 = 1 - p1
         init = Dict("trans"=> copy(Translation_Dict),"align"=>copy(alignments),"fert"=>copy(fertilities), "null" => [p1,p0])
+        println(length(init["align"][1]))
     end
     return(init)
 end

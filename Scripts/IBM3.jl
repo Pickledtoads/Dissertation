@@ -49,7 +49,6 @@ function neighboring(a, jp, lens)
     notpegged = setdiff(1:lens[1], jp)
     for j in notpegged
         for i in 1:lens[2]
-            #println([j,i])
             a_new = copy(a)
             a_new[j] = i
             push!(N,a_new)
@@ -63,7 +62,6 @@ function neighboring(a, jp, lens)
             push!(N, a_new)
         end
     end
-    #println(N)
     return(N)
 end
 
@@ -136,7 +134,7 @@ function prob(eng,fre,a,dict, align, fert, null)
 
             # Calculate the fertility probabilities
             if f in keys(fert[fre[i]])
-                fertility+=log(factorial(f)*fert[fre[i]][f])
+                fertility+=MathConstants.e^log(factorial(f)*fert[fre[i]][f])
             end
 
             phi = length([k for (k,v) in a if v==length(fre)])
@@ -158,7 +156,7 @@ function prob(eng,fre,a,dict, align, fert, null)
 
 
                 nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
-                fertility += nulls
+                fertility += MathConstants.e^nulls
             else
                 N = phi+1
                 x = 2*phi+1-length(eng)
@@ -174,13 +172,13 @@ function prob(eng,fre,a,dict, align, fert, null)
 
     # If we have not yet found fertility probabilities
     else
-        fertility = 0
+        fertility = 1
     end
 
     # find the alignment and translation probabilities
     for j in 1:length(eng)
-        #println(lex_align)
         lex = log(dict[fre[a[j]]][eng[j]])+ log(align[j,a[j]])
+
         if !isinf(lex) & !isnan(lex)
             lex_align += MathConstants.e ^ lex
         end
@@ -231,8 +229,9 @@ function IBM3(Eng, Fre, iter, init)
             if s%100 ==0
                 println(s)
             end
-            eng = Sent_Split(Eng[s],Fre[s])[1]
-            fre = Sent_Split(Eng[s],Fre[s])[2]
+            sent = Sent_Split(Eng[s],Fre[s])
+            eng = sent[1]
+            fre = sent[2]
             align_key = hcat(string(length(eng)),string(length(fre)))
             A = sample(eng,fre,init["trans"], init["align"], init["fert"], init["null"])
             c_tot = 0
@@ -240,14 +239,12 @@ function IBM3(Eng, Fre, iter, init)
             for a in A
                 c_tot += prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])
             end
-
             for a in A
                 null = 0
                 c = prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
                 for e in 1:length(eng)
                     count_t[fre[a[e]]][eng[e]] += c
                     total_t[fre[a[e]]] += c
-                    #println("potatoes")
                     count_d[align_key][e,a[e]] += c
                     if a[e] == (length(fre))
                         null += 1
