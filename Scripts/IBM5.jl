@@ -175,7 +175,7 @@ function prob_IBM5(eng,fre,a,dict, align, fert, null)
     end
 
     # find the distortion/alignment probabilites
-    last_cept = 1
+    last_cept = 0
     Filled = repeat([""], length(eng))
     for i in 1:length(fre)
         maps_to = sort([k for (k,v) in a if v==i])
@@ -285,7 +285,7 @@ function IBM5(Eng, Fre, iter, init, samp_align)
                     c = prob_IBM5(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
                 end
 
-                cept_centre = 1
+    
                 for e in 1:length(eng)
                     count_t[fre[a[e]]][eng[e]] += c
                     total_t[fre[a[e]]] += c
@@ -295,7 +295,7 @@ function IBM5(Eng, Fre, iter, init, samp_align)
                     end
                 end
                     # we now add the count to the rel_distortion counts
-                    last_cept = 1
+                    last_cept = 0
                     Filled = repeat([""], length(eng))
                     for i in 1:length(fre)
                         maps_to = sort([k for (k,v) in a if v==i])
