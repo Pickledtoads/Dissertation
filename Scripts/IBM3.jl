@@ -186,9 +186,6 @@ function prob(eng,fre,a,dict, align, fert, null)
 
     # Return the probability
     prob = MathConstants.e^(log(lex_align)+log(fertility))
-    if prob < 0
-        println(prob)
-    end
 
     return(prob)
 
@@ -226,9 +223,6 @@ function IBM3(Eng, Fre, iter, init)
 
         @threads for s in 1:length(Eng)
             # split up our words
-            if s%100 ==0
-                println(s)
-            end
             sent = Sent_Split(Eng[s],Fre[s])
             eng = sent[1]
             fre = sent[2]
