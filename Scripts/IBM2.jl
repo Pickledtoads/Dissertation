@@ -33,7 +33,6 @@ function IBM2(Eng, Fre, iter, init)
             sent = Sent_Split(Eng[s], Fre[s])
             e = sent[1]
             f = sent[2]
-
             # The dictionary key pointing to the right alignment table
             align_key = hcat(string(length(e)), string(length(f)))
 

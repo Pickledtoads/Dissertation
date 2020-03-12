@@ -1,12 +1,10 @@
 
 # Import all required packages
-using HDF5, JLD, Base.Threads, Statistics
+using HDF5, JLD, Base.Threads, Statistics,DataFrames,CSV
 
 French = readlines(joinpath(@__DIR__,"CleanedShortFrench.txt"))
 English = readlines(joinpath(@__DIR__,"CleanedShortEnglish.txt"))
 n = 100
-#println(French)
-
 
 
 include(joinpath(@__DIR__, "Scripts\\UtilityFunctions.jl"))
@@ -61,7 +59,9 @@ else
     IBM3_save = IBM3(English[1:n], French[1:n], 2, IBM2_save)
     save(Name4, "IBM3_save", IBM3_save)
 end
-println(IBM3_save["align"])
+# Save this is a form that R can access
+include(joinpath(@__DIR__, "Prep_for_R.jl"))
+IBM3_R_Prep(IBM3_save,n)
 # Aaaaaand IBM4 😈
 include(joinpath(@__DIR__, "Scripts\\IBM4.jl"))
 Name5 = string(joinpath(@__DIR__, "Trained\\"),"IBM4_save_", n, ".jld")

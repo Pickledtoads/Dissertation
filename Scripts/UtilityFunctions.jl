@@ -39,7 +39,9 @@ function init_Align(Eng, Fre)
             sent = Sent_Split(Eng[i],Fre[i])
             e = sent[1]
             f = sent[2]
-
+            if length(e) <=2
+                continue
+            end
             # generate an alignment table key
             align_key = hcat(string(length(e)),string(length(f)))
 

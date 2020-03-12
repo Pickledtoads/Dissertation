@@ -168,6 +168,9 @@ function prob(eng,fre,a,dict, align, fert, null)
                 nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
                 fertility += MathConstants.e^nulls
             end
+            if fertility == NaN
+                print(fre, nulls)
+            end
         end
 
     # If we have not yet found fertility probabilities
@@ -222,21 +225,31 @@ function IBM3(Eng, Fre, iter, init)
         end
 
         @threads for s in 1:length(Eng)
+
             # split up our words
             sent = Sent_Split(Eng[s],Fre[s])
             eng = sent[1]
             fre = sent[2]
+
             align_key = hcat(string(length(eng)),string(length(fre)))
             A = sample(eng,fre,init["trans"], init["align"], init["fert"], init["null"])
             c_tot = 0
 
             for a in A
-                c_tot += prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])
+                new = prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])
+                if new==NaN
+                    new=0
+                end
+                c_tot += new
             end
             for a in A
                 null = 0
                 c = prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
+                if c == NaN
+                    c=0
+                end
                 for e in 1:length(eng)
+
                     count_t[fre[a[e]]][eng[e]] += c
                     total_t[fre[a[e]]] += c
                     count_d[align_key][e,a[e]] += c
@@ -291,8 +304,12 @@ function IBM3(Eng, Fre, iter, init)
         end
         # Recalculate the fertility distribution
         for f in collect(keys(fertilities))
-            normed_vals = values(fertilities[f])./ sum(values(fertilities[f]))
-            fertilities[f] = Dict(keys(fertilities[f]).=> normed_vals)
+            try
+                normed_vals = values(fertilities[f])./ sum(values(fertilities[f]))
+                fertilities[f] = Dict(keys(fertilities[f]).=> normed_vals)
+
+            catch
+            end
         end
         p1 = count_p1/(count_p1+count_p0)
         p0 = 1 - p1
