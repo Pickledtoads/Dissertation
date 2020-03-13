@@ -32,7 +32,6 @@ function hillclimbing(eng, fre, a, jp, dict, align, fert, null)
            go = false
         end
    end
-
    return(a)
 end
 
@@ -168,9 +167,7 @@ function prob(eng,fre,a,dict, align, fert, null)
                 nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
                 fertility += MathConstants.e^nulls
             end
-            if fertility == NaN
-                print(fre, nulls)
-            end
+            
         end
 
     # If we have not yet found fertility probabilities
@@ -237,7 +234,7 @@ function IBM3(Eng, Fre, iter, init)
 
             for a in A
                 new = prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])
-                if new==NaN
+                if isnan(new) | isinf(new)
                     new=0
                 end
                 c_tot += new
@@ -245,7 +242,7 @@ function IBM3(Eng, Fre, iter, init)
             for a in A
                 null = 0
                 c = prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
-                if c == NaN
+                if isnan(c) | isinf(c)
                     c=0
                 end
                 for e in 1:length(eng)
@@ -266,14 +263,14 @@ function IBM3(Eng, Fre, iter, init)
                     count_p1 += null*c
                     count_p0 += abs(length(eng)-2*null)*c
                 end
-                for e in 1:length(eng)
+                for f in 1:length(fre)
                     fertility = 0
-                    for j in 1:length(fre)
-                        if j == a[e]
+                    for e in 1:length(eng)
+                        if f == a[e]
                             fertility += 1
                         end
                         temp = Dict(fertility => c)
-                        count_f[fre[j]]= merge(+,count_f[fre[j]], temp)
+                        count_f[fre[f]]= merge(+,count_f[fre[f]], temp)
                     end
                 end
             end
@@ -317,3 +314,8 @@ function IBM3(Eng, Fre, iter, init)
     end
     return(init)
 end
+
+
+
+c = Dict(0=>1,2=>1)
+length([k for (k,v) in c if v==1])

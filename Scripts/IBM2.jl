@@ -41,7 +41,7 @@ function IBM2(Eng, Fre, iter, init)
                 for i in 1:length(f)
 
                     # find the log probability of translation
-                    latest = log(Trans_Dict[f[i]][e[j]])+log(align[align_key][j,i])
+                    latest = log(init[f[i]][e[j]])+log(align[align_key][j,i])
 
                     # Ignore the entries with a nan or infinite value
                     if isnan(latest) | isinf(latest)

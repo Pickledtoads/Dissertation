@@ -8,28 +8,31 @@
 #
 
 library(shiny)
-
+library(shinyjqui)
 # Define UI for application that draws a histogram
 ui <- fluidPage(
-
+    shinyjs::useShinyjs(),
     # Application title
-    titlePanel("Old Faithful Geyser Data"),
+    titlePanel(""),
 
     # Sidebar with a slider input for number of bins 
-    sidebarLayout(
-        sidebarPanel(
+    sidebarLayout(position = "left",
+        sidebarPanel(width=4,
             selectInput("ModelChoice","Which model to use for translation:",c("IBM 1","IBM 2","IBM 3","IBM 4","IBM 5")),
         ),
         # Show a plot of the generated distribution
-        mainPanel(
-           plotOutput("distPlot")
+        mainPanel(width=8,
+                  textAreaInput("input_Box", "Please input the French sentence for translation:", resize="none"),
+                  actionButton("Trans_button", "Press to Translate", position = "centre"),
+                  textAreaInput("output_Box", label ="",resize="none")
         )
     )
+    
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-
+  shinyjs::disable("output_Box")
    
 }
 
