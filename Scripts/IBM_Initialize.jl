@@ -34,7 +34,6 @@ function Initialize(Eng, Fre)
 
     # For each sentence calculate the sum of word by word translation probabilites
     for i in 1:size(Eng)[1]
-
         # call the InitT function
         SentCount = InitT(Eng[i], Fre[i])
 

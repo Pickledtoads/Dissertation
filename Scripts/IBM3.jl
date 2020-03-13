@@ -18,7 +18,8 @@ function hillclimbing(eng, fre, a, jp, dict, align, fert, null)
     while go == true
         a_old = copy(a)
         neighbors = neighboring(a, jp, lens)
-        @threads for n in neighbors
+
+        for n in neighbors
 
             # Check if the latest option has a greater probability
             if prob(eng,fre,n,dict,align,fert, null) > prob(eng,fre,a,dict,align,fert, null)
@@ -31,7 +32,6 @@ function hillclimbing(eng, fre, a, jp, dict, align, fert, null)
            go = false
         end
    end
-
    return(a)
 end
 
@@ -48,7 +48,6 @@ function neighboring(a, jp, lens)
     notpegged = setdiff(1:lens[1], jp)
     for j in notpegged
         for i in 1:lens[2]
-            #println([j,i])
             a_new = copy(a)
             a_new[j] = i
             push!(N,a_new)
@@ -62,7 +61,6 @@ function neighboring(a, jp, lens)
             push!(N, a_new)
         end
     end
-    #println(N)
     return(N)
 end
 
@@ -135,40 +133,59 @@ function prob(eng,fre,a,dict, align, fert, null)
 
             # Calculate the fertility probabilities
             if f in keys(fert[fre[i]])
-                fertility+=log(factorial(f)*fert[fre[i]][f])
+                fertility+=MathConstants.e^log(factorial(f)*fert[fre[i]][f])
             end
 
             phi = length([k for (k,v) in a if v==length(fre)])
             # if there are lots of null tokens the "choose" term needs
             # to be found differently
+
             if length(eng)>(2*phi)
-                nulls = (factorial(length(eng)-phi)/(factorial(phi)*factorial(length(eng)-2*phi)))*null[1]^phi*null[2]^(length(eng)-phi)
-                fertility += log(nulls)
+                N = length(eng)-phi
+                x = phi
+                N_x = N-x
+
+                numerator = 0.5*log(2*MathConstants.pi*N)+N*log(N/MathConstants.e)
+
+                if x != 0
+                    denominator = 0.5*log(2*MathConstants.pi*x)+0.5*log(2*MathConstants.pi*N_x)+x*log(x/MathConstants.e)+N_x*log(N_x/MathConstants.e)
+                elseif x == 0
+                    denominator = 0.5*log(2*MathConstants.pi*N_x)+N_x*log(N_x/MathConstants.e)
+                end
+
+
+                nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
+                fertility += MathConstants.e^nulls
             else
-                nulls = (factorial(phi+1)/(factorial(2*phi+1-length(eng))*factorial(length(eng)-phi)))*null[1]^phi*null[2]^(length(eng)-phi)
-                fertility += log(nulls)
+                N = phi+1
+                x = 2*phi+1-length(eng)
+                N_x = N-x
+
+                numerator = 0.5*log(N)+N*log(N/MathConstants.e)
+                denominator = 0.5*log(2*MathConstants.pi*x*N_x)+x*log(x/MathConstants.e)+N_x*log(N_x/MathConstants.e)
+
+                nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
+                fertility += MathConstants.e^nulls
             end
+            
         end
 
     # If we have not yet found fertility probabilities
     else
-        fertility = 0
+        fertility = 1
     end
 
     # find the alignment and translation probabilities
     for j in 1:length(eng)
-        #println(lex_align)
-        lex = log(dict[fre[a[j]]][eng[j]]*align[j,a[j]])
+        lex = log(dict[fre[a[j]]][eng[j]])+ log(align[j,a[j]])
+
         if !isinf(lex) & !isnan(lex)
-            lex_align += lex
+            lex_align += MathConstants.e ^ lex
         end
     end
 
     # Return the probability
-    prob = MathConstants.e^(lex_align+fertility)
-    if prob < 0
-        println(prob)
-    end
+    prob = MathConstants.e^(log(lex_align)+log(fertility))
 
     return(prob)
 
@@ -204,30 +221,34 @@ function IBM3(Eng, Fre, iter, init)
             count_f[k] =  Dict()# fertility counts
         end
 
-        for s in 1:length(Eng)
+        @threads for s in 1:length(Eng)
+
             # split up our words
-            if s%100 ==0
-                println(s)
-            end
-            eng = Sent_Split(Eng[s],Fre[s])[1]
-            fre = Sent_Split(Eng[s],Fre[s])[2]
+            sent = Sent_Split(Eng[s],Fre[s])
+            eng = sent[1]
+            fre = sent[2]
+
             align_key = hcat(string(length(eng)),string(length(fre)))
-
             A = sample(eng,fre,init["trans"], init["align"], init["fert"], init["null"])
-
             c_tot = 0
 
             for a in A
-                c_tot += prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])
+                new = prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])
+                if isnan(new) | isinf(new)
+                    new=0
+                end
+                c_tot += new
             end
-
             for a in A
                 null = 0
                 c = prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
+                if isnan(c) | isinf(c)
+                    c=0
+                end
                 for e in 1:length(eng)
+
                     count_t[fre[a[e]]][eng[e]] += c
                     total_t[fre[a[e]]] += c
-                    #println("potatoes")
                     count_d[align_key][e,a[e]] += c
                     if a[e] == (length(fre))
                         null += 1
@@ -242,15 +263,14 @@ function IBM3(Eng, Fre, iter, init)
                     count_p1 += null*c
                     count_p0 += abs(length(eng)-2*null)*c
                 end
-                #println([count_p1,count_p0])
-                for e in 1:length(eng)
+                for f in 1:length(fre)
                     fertility = 0
-                    for j in 1:length(fre)
-                        if j == a[e]
+                    for e in 1:length(eng)
+                        if f == a[e]
                             fertility += 1
                         end
                         temp = Dict(fertility => c)
-                        count_f[fre[j]]= merge(+,count_f[fre[j]], temp)
+                        count_f[fre[f]]= merge(+,count_f[fre[f]], temp)
                     end
                 end
             end
@@ -262,9 +282,9 @@ function IBM3(Eng, Fre, iter, init)
 
         fertilities = copy(count_f)
         # recalculate the translation distribution
-        @threads for i in 1:length(Translation_Dict)
+        for i in 1:length(Translation_Dict)
             fre = collect(keys(Translation_Dict))[i]
-            for j in 1:length(Translation_Dict[fre])
+            @threads for j in 1:length(Translation_Dict[fre])
                 eng = collect(keys(Translation_Dict[fre]))[j]
                 Translation_Dict[fre][eng] = count_t[fre][eng]/ total_t[fre]
             end
@@ -274,15 +294,19 @@ function IBM3(Eng, Fre, iter, init)
             row = size(count_d[k])[1]
             col = size(count_d[k])[2]
             for i in 1:col
-                for j in 1:row
+                @threads for j in 1:row
                     alignments[k][j,i] = count_d[k][j,i]/total_d[k][i]
                 end
             end
         end
         # Recalculate the fertility distribution
         for f in collect(keys(fertilities))
-            normed_vals = values(fertilities[f])./ sum(values(fertilities[f]))
-            fertilities[f] = Dict(keys(fertilities[f]).=> normed_vals)
+            try
+                normed_vals = values(fertilities[f])./ sum(values(fertilities[f]))
+                fertilities[f] = Dict(keys(fertilities[f]).=> normed_vals)
+
+            catch
+            end
         end
         p1 = count_p1/(count_p1+count_p0)
         p0 = 1 - p1
@@ -290,3 +314,8 @@ function IBM3(Eng, Fre, iter, init)
     end
     return(init)
 end
+
+
+
+c = Dict(0=>1,2=>1)
+length([k for (k,v) in c if v==1])
