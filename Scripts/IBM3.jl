@@ -221,7 +221,7 @@ function IBM3(Eng, Fre, iter, init)
             count_f[k] =  Dict()# fertility counts
         end
 
-        for s in 1:length(Eng)
+        @threads for s in 1:length(Eng)
 
             # split up our words
             sent = Sent_Split(Eng[s],Fre[s])
