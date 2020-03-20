@@ -342,14 +342,14 @@ function IBM5(Eng, Fre, iter, init, samp_align)
                     count_p1 += null*c
                     count_p0 += abs(length(eng)-2*null)*c
                 end
-                for e in 1:length(eng)
+                for f in 1:length(fre)
                     fertility = 0
-                    for j in 1:length(fre)
-                        if j == a[e]
+                    for e in 1:length(eng)
+                        if f == a[e]
                             fertility += 1
                         end
                         temp = Dict(fertility => c)
-                        count_f[fre[j]]= merge(+,count_f[fre[j]], temp)
+                        count_f[fre[f]]= merge(+,count_f[fre[f]], temp)
                     end
                 end
             end

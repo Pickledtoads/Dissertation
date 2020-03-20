@@ -167,7 +167,7 @@ function prob(eng,fre,a,dict, align, fert, null)
                 nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
                 fertility += MathConstants.e^nulls
             end
-            
+
         end
 
     # If we have not yet found fertility probabilities
@@ -221,7 +221,7 @@ function IBM3(Eng, Fre, iter, init)
             count_f[k] =  Dict()# fertility counts
         end
 
-        @threads for s in 1:length(Eng)
+        for s in 1:length(Eng)
 
             # split up our words
             sent = Sent_Split(Eng[s],Fre[s])
@@ -267,9 +267,10 @@ function IBM3(Eng, Fre, iter, init)
                     fertility = 0
                     for e in 1:length(eng)
                         if f == a[e]
+
                             fertility += 1
                         end
-                        temp = Dict(fertility => c)
+                        temp = Dict(fertility => 1)
                         count_f[fre[f]]= merge(+,count_f[fre[f]], temp)
                     end
                 end

@@ -1,7 +1,15 @@
 require(rhdf5)
 
 File_Root <- "C:/Users/julul/github/Dissertation/Trained/"
-IBM3_Names <- c("IBM3_trans_50.csv","IBM3_align_50.csv","IBM3_fert_50.csv","IBM3_null_50.csv")
+
+# Load in the IBM2 data
+IBM2_Names <- c("IBM2_trans_1000.csv","IBM2_align_1000.csv")
+IBM3_trans <- read.csv(paste(File_Root,IBM2_Names[1], sep=""),encoding ="UTF-8")
+IBM3_align <- read.csv(paste(File_Root,IBM2_Names[2], sep=""),encoding ="UTF-8")
+
+
+
+IBM3_Names <- c("IBM3_trans_1000.csv","IBM3_align_1000.csv","IBM3_fert_1000.csv","IBM3_null_1000.csv")
 
 IBM3_trans <- read.csv(paste(File_Root,IBM3_Names[1], sep=""),encoding ="UTF-8")
 IBM3_align <- read.csv(paste(File_Root,IBM3_Names[2], sep=""),encoding ="UTF-8")
@@ -11,6 +19,14 @@ IBM3_null <- read.csv(paste(File_Root,IBM3_Names[4], sep=""),encoding ="UTF-8")
 french = unlist(strsplit("nous ne savons pas ce qui se passe", split =" "))
 IBM3_align[IBM3_align[,"fre_len"]==10,]
 IBM3_align[IBM3_align[,"fre_len"]==7,]
+
+
+IBM2_Translate <- function(french,IBM2_trans,IBM2_align)
+{
+  
+  
+  
+}
 
 
 IBM3_Translate <- function(french, IBM3_trans,IBM3_align,IBM3_fert,IBM3_null)

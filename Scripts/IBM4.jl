@@ -263,18 +263,14 @@ function prob_IBM4(eng,fre,a,dict, align, fert, null)
         maps_to = sort([k for (k,v) in a if v==i])
         fert = length(maps_to)
         if fert == 1
-            rel_dist = [i-last_cept]
-            new = []
-            for e in rel_dist
-                try
-                    push!(new, align[fert][e])
-                catch
-                    #print([fert,e])
-                end
+            rel_dist = i-last_cept
+            try
+                new = align[fert][rel_dist]
+            catch
+                new = 0
             end
 
-            new = sum(log.(new))
-            alignment += MathConstants.e^new
+            alignment += new
             last_cept = convert(Integer,ceil(mean(maps_to)))
         elseif fert>1
             rel_dist = vcat(maps_to[1]-last_cept, maps_to[2:fert]-maps_to[1:(fert-1)])
@@ -410,14 +406,14 @@ function IBM4(Eng, Fre, iter, init, samp_align)
                     count_p1 += null*c
                     count_p0 += abs(length(eng)-2*null)*c
                 end
-                for e in 1:length(eng)
+                for f in 1:length(fre)
                     fertility = 0
-                    for j in 1:length(fre)
-                        if j == a[e]
+                    for e in 1:length(eng)
+                        if f == a[e]
                             fertility += 1
                         end
                         temp = Dict(fertility => c)
-                        count_f[fre[j]]= merge(+,count_f[fre[j]], temp)
+                        count_f[fre[f]]= merge(+,count_f[fre[f]], temp)
                     end
                 end
             end
