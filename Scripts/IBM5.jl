@@ -214,9 +214,6 @@ function prob_IBM5(eng,fre,a,dict, align, fert, null)
 
     # Return the probability
     prob = MathConstants.e^(log(lex)+log(fertility))
-    if prob < 0
-        println(prob)
-    end
 
     return(prob)
 
@@ -254,9 +251,6 @@ function IBM5(Eng, Fre, iter, init, samp_align)
 
         @threads for s in 1:length(Eng)
             # split up our words
-            if s%100 ==0
-                println(s)
-            end
 
             sent = Sent_Split(Eng[s],Fre[s])
             eng = sent[1]
@@ -285,7 +279,7 @@ function IBM5(Eng, Fre, iter, init, samp_align)
                     c = prob_IBM5(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
                 end
 
-    
+
                 for e in 1:length(eng)
                     count_t[fre[a[e]]][eng[e]] += c
                     total_t[fre[a[e]]] += c

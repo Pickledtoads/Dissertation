@@ -1,10 +1,9 @@
-
 # Import all required packages
 using HDF5, JLD, Base.Threads, Statistics,DataFrames,CSV
 
 French = readlines(joinpath(@__DIR__,"CleanedShortFrench.txt"))
 English = readlines(joinpath(@__DIR__,"CleanedShortEnglish.txt"))
-n = 1
+n = 1000
 
 
 include(joinpath(@__DIR__, "Scripts\\UtilityFunctions.jl"))
@@ -55,7 +54,7 @@ if isfile(Name4)
     println("loaded - IBM3_save" )
 
 else
-    IBM3_save = IBM3(English[1:n], French[1:n], 150, IBM2_save)
+    IBM3_save = IBM3(English[1:n], French[1:n], 10, IBM2_save)
     save(Name4, "IBM3_save", IBM3_save)
 end
 # Save this is a form that R can access
@@ -72,7 +71,7 @@ if isfile(Name5)
     println("loaded - IBM4_save" )
 
 else
-    IBM4_save = IBM4(English[1:n], French[1:n], 5, IBM3_save, IBM3_save["align"])
+    IBM4_save = IBM4(English[1:n], French[1:n], 10, IBM3_save, IBM3_save["align"])
     save(Name5, "IBM4_save", IBM4_save)
 end
 println(IBM4_save["align"])

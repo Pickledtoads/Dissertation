@@ -188,9 +188,7 @@ function prob(eng,fre,a,dict, align, fert, null)
 
     # Return the probability
     prob = MathConstants.e^(log(lex_align)+log(fertility))
-    if prob < 0
-        println(prob)
-    end
+
 
     return(prob)
 
@@ -271,7 +269,7 @@ function prob_IBM4(eng,fre,a,dict, align, fert, null)
                 try
                     push!(new, align[fert][e])
                 catch
-                    print([fert,e])
+                    #print([fert,e])
                 end
             end
 
@@ -285,7 +283,7 @@ function prob_IBM4(eng,fre,a,dict, align, fert, null)
                 try
                     push!(new, align[convert(Integer,fert)][convert(Integer,e)])
                 catch
-                    print([fert,e])
+                    #print([fert,e])
                 end
 
             end
@@ -307,9 +305,7 @@ function prob_IBM4(eng,fre,a,dict, align, fert, null)
 
     # Return the probability
     prob = MathConstants.e^(log(lex)+log(fertility))
-    if prob < 0
-        println(prob)
-    end
+
 
     return(prob)
 
@@ -348,9 +344,6 @@ function IBM4(Eng, Fre, iter, init, samp_align)
         @threads for s in 1:length(Eng)
             # split up our words
 
-            if s%100 ==0
-                println(s)
-            end
 
             sent = Sent_Split(Eng[s],Fre[s])
             eng = sent[1]
@@ -455,7 +448,6 @@ function IBM4(Eng, Fre, iter, init, samp_align)
         p1 = count_p1/(count_p1+count_p0)
         p0 = 1 - p1
         init = Dict("trans"=> copy(Translation_Dict),"align"=>copy(alignments),"fert"=>copy(fertilities), "null" => [p1,p0])
-        println(length(init["align"][1]))
     end
     return(init)
 end
