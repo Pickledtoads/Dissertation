@@ -264,13 +264,18 @@ function IBM3(Eng, Fre, iter, init)
                     count_p0 += abs(length(eng)-2*null)*c
                 end
                 for f in 1:length(fre)
-                    fertility = 0
                     for e in 1:length(eng)
                         if f == a[e]
-
-                            fertility += 1
+                            try
+                                fertility += 1
+                            catch
+                                fertility = 1
+                            end
                         end
-                        temp = Dict(fertility => 1)
+                        if !(isdefined(fertility))
+                            fertility = 0
+                        end
+                        temp = Dict(fertility => c)
                         count_f[fre[f]]= merge(+,count_f[fre[f]], temp)
                     end
                 end

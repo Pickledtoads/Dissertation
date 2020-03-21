@@ -75,8 +75,8 @@ else
     IBM4_save = IBM4(English[1:n], French[1:n], 10, IBM3_save, IBM3_save["align"])
     save(Name5, "IBM4_save", IBM4_save)
 end
-println(IBM4_save["align"])
-
+# Now output those data-files to an R-friendly format
+IBM4_R_Prep(IBM4_save,n)
 # Finally IBM5 🍰
 include(joinpath(@__DIR__, "Scripts\\IBM5.jl"))
 Name6 = string(joinpath(@__DIR__, "Trained\\"),"IBM5_save_", n, ".jld")
@@ -89,3 +89,4 @@ else
     IBM5_save = IBM5(English[1:n], French[1:n], 10, IBM4_save, IBM3_save["align"])
     save(Name6, "IBM5_save", IBM5_save)
 end
+IBM5_R_Prep(IBM5_save,n)

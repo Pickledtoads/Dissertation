@@ -407,10 +407,16 @@ function IBM4(Eng, Fre, iter, init, samp_align)
                     count_p0 += abs(length(eng)-2*null)*c
                 end
                 for f in 1:length(fre)
-                    fertility = 0
                     for e in 1:length(eng)
                         if f == a[e]
-                            fertility += 1
+                            try
+                                fertility += 1
+                            catch
+                                fertility = 1
+                            end
+                        end
+                        if !(isdefined(fertility))
+                            fertility = 0
                         end
                         temp = Dict(fertility => c)
                         count_f[fre[f]]= merge(+,count_f[fre[f]], temp)
