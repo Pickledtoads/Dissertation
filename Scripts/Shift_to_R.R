@@ -3,10 +3,10 @@ require(rhdf5)
 File_Root <- "C:/Users/julul/github/Dissertation/Trained/"
 
 # Load in the IBM2 data
-IBM2_Names <- c("IBM2_trans_1000.csv","IBM2_align_1000.csv")
-IBM3_trans <- read.csv(paste(File_Root,IBM2_Names[1], sep=""),encoding ="UTF-8")
-IBM3_align <- read.csv(paste(File_Root,IBM2_Names[2], sep=""),encoding ="UTF-8")
-
+IBM2_Names <- c("IBM2_trans_9.csv","IBM2_align_9.csv")
+IBM2_trans <- read.csv(paste(File_Root,IBM2_Names[1], sep=""),encoding ="UTF-8")
+IBM2_align <- read.csv(paste(File_Root,IBM2_Names[2], sep=""),encoding ="UTF-8")
+IBM2_align[IBM2_align["fre_len"]==12,]
 
 
 IBM3_Names <- c("IBM3_trans_1000.csv","IBM3_align_1000.csv","IBM3_fert_1000.csv","IBM3_null_1000.csv")
@@ -16,17 +16,24 @@ IBM3_align <- read.csv(paste(File_Root,IBM3_Names[2], sep=""),encoding ="UTF-8")
 IBM3_fert <- read.csv(paste(File_Root,IBM3_Names[3], sep=""),encoding ="UTF-8")
 IBM3_null <- read.csv(paste(File_Root,IBM3_Names[4], sep=""),encoding ="UTF-8")
 
-french = unlist(strsplit("nous ne savons pas ce qui se passe", split =" "))
+french = unlist(strsplit("je vous invite à vous lever pour cette minute de silence", split =" "))
 IBM3_align[IBM3_align[,"fre_len"]==10,]
 IBM3_align[IBM3_align[,"fre_len"]==7,]
 
 
 IBM2_Translate <- function(french,IBM2_trans,IBM2_align)
 {
-  
+  l_fre <- length(french)+1
+  print(l_fre)
+  for (f in 1:l_fre){
+    align<- IBM2_align[IBM2_align["fre_len"] == l_fre & IBM2_align["eng_len"] == l_fre, ] 
+    print(align)
+    
+  }
   
   
 }
+IBM2_Translate(french, IBM2_trans,IBM2_align)
 
 
 IBM3_Translate <- function(french, IBM3_trans,IBM3_align,IBM3_fert,IBM3_null)
