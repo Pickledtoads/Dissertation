@@ -166,12 +166,11 @@ function IBM4_R_Prep(IBM4_save,n)
     rel_dist = []
     probs = []
 
-    for k in keys(align)
+    for k1 in keys(align)
         ky = keys(align[k])
         for k2 in ky
             push!(fert,k1)
             push!(rel_dist,k2)
-            println([k,k2])
             push!(probs,align[k][k2])
         end
     end

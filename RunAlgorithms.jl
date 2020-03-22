@@ -4,7 +4,7 @@ using HDF5, JLD, Base.Threads, Statistics,DataFrames,CSV
 
 French = readlines(joinpath(@__DIR__,"CleanedShortFrench.txt"))
 English = readlines(joinpath(@__DIR__,"CleanedShortEnglish.txt"))
-n = 100
+n = 11
 
 include(joinpath(@__DIR__, "Prep_for_R.jl"))
 include(joinpath(@__DIR__, "Scripts\\UtilityFunctions.jl"))
@@ -57,13 +57,13 @@ if isfile(Name4)
     println("loaded - IBM3_save" )
 
 else
-    IBM3_save = IBM3(English[1:n], French[1:n], 10, IBM2_save)
+    IBM3_save = IBM3(English[1:n], French[1:n], 1, IBM2_save)
     save(Name4, "IBM3_save", IBM3_save)
 end
 
 # Save this is a form that R can access
-
 IBM3_R_Prep(IBM3_save,n)
+
 # Aaaaaand IBM4 😈
 include(joinpath(@__DIR__, "Scripts\\IBM4.jl"))
 Name5 = string(joinpath(@__DIR__, "Trained\\"),"IBM4_save_", n, ".jld")
