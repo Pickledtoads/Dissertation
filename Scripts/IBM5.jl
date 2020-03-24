@@ -291,10 +291,11 @@ function IBM5(Eng, Fre, iter, init, samp_align)
                     # we now add the count to the rel_distortion counts
                     last_cept = 0
                     Filled = repeat([""], length(eng))
+                    vacmax = length(Filled)
                     for i in 1:length(fre)
                         maps_to = sort([k for (k,v) in a if v==i])
                         fert = length(maps_to)
-                        vacmax = length(Filled)
+
                         if fert>0
                             for words in maps_to
                                 no_vac_to_cept = length(findall(x->x=="", Filled[1:last_cept]))
@@ -307,6 +308,7 @@ function IBM5(Eng, Fre, iter, init, samp_align)
                                 try
                                     count_d[fert][vacmax][no_vac_to_cept][no_vac_to_pos] += c
                                     total_d[fert][vacmax][no_vac_to_cept] += c
+                                    vacmax -= 1
                                 catch
                                     new = Dict(no_vac_to_pos=>c)
                                     if fert in keys(count_d)
@@ -315,11 +317,13 @@ function IBM5(Eng, Fre, iter, init, samp_align)
                                         if vacmax in keys(count_d[fert])
                                             count_d[fert][vacmax] = merge(merger_plus, count_d[fert][vacmax],Dict(no_vac_to_cept=>new))
                                             total_d[fert][vacmax] = merge(+,total_d[fert][vacmax],Dict(no_vac_to_cept=>c))
+                                            vacmax -= 1
                                         else
                                             new_d = Dict(vacmax=>Dict(no_vac_to_cept=>Dict(no_vac_to_pos=>c)))
                                             count_d[fert]= merge(count_d[fert],new_d)
                                             new_dt = Dict(vacmax=>Dict(no_vac_to_cept=>c))
                                             total_d[fert]=merge(total_d[fert],new_dt)
+                                            vacmax -= 1
                                         end
 
                                     else
@@ -327,11 +331,12 @@ function IBM5(Eng, Fre, iter, init, samp_align)
                                         merge!(count_d,new_d)
                                         new_dt = Dict(fert=>Dict(vacmax=>Dict(no_vac_to_cept=>c)))
                                         merge!(total_d,new_dt)
+                                        vacmax -= 1
                                     end
                                 end
 
                                 Filled[words] = "word;)"
-                                vacmax -= 1
+
                             end
 
                             last_cept = convert(Integer,ceil(mean(maps_to)))
