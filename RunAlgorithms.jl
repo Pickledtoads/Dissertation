@@ -4,7 +4,7 @@ using HDF5, JLD, Base.Threads, Statistics,DataFrames,CSV
 
 French = readlines(joinpath(@__DIR__,"CleanedShortFrench.txt"))
 English = readlines(joinpath(@__DIR__,"CleanedShortEnglish.txt"))
-n = 1
+n = 10
 
 include(joinpath(@__DIR__, "Prep_for_R.jl"))
 include(joinpath(@__DIR__, "Scripts\\UtilityFunctions.jl"))
@@ -57,7 +57,7 @@ if isfile(Name4)
     println("loaded - IBM3_save" )
 
 else
-    IBM3_save = IBM3(English[1:n], French[1:n], 5, IBM2_save)
+    IBM3_save = IBM3(English[1:n], French[1:n], 1, IBM2_save)
     save(Name4, "IBM3_save", IBM3_save)
 end
 
@@ -72,7 +72,7 @@ if isfile(Name5)
     IBM4_save = load(Name5)["IBM4_save"]
     println("loaded - IBM4_save" )
 else
-    IBM4_save = IBM4(English[1:n], French[1:n], 3, IBM3_save, IBM3_save["align"])
+    IBM4_save = IBM4(English[1:n], French[1:n], 1, IBM3_save, IBM3_save["align"])
     save(Name5, "IBM4_save", IBM4_save)
 end
 # Now output those data-files to an R-friendly format
@@ -89,5 +89,5 @@ else
     IBM5_save = IBM5(English[1:n], French[1:n], 3, IBM4_save, IBM3_save["align"])
     save(Name6, "IBM5_save", IBM5_save)
 end
+
 IBM5_R_Prep(IBM5_save,n)
-IBM5_save["align"]

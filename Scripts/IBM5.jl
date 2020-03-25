@@ -288,61 +288,47 @@ function IBM5(Eng, Fre, iter, init, samp_align)
                         null += 1
                     end
                 end
-                    # we now add the count to the rel_distortion counts
+                # we now add the count to the rel_distortion counts
                     last_cept = 0
                     Filled = repeat([""], length(eng))
+
                     vacmax = length(Filled)
-                    for i in 1:length(fre)
-                        maps_to = sort([k for (k,v) in a if v==i])
+                    for f in 1:length(fre)
+                        maps_to = sort([k for (k,v) in a if v==f])
+
                         fert = length(maps_to)
-
-                        if fert>0
-                            for words in maps_to
-                                no_vac_to_cept = length(findall(x->x=="", Filled[1:last_cept]))
-                                no_vac_to_pos = length(findall(x->x=="", Filled[1:words]))
-                                if maps_to[1]!=words
-
-                                    no_vac_to_pos = no_vac_to_pos-length(findall(x->x=="", Filled[1:maps_to[1]]))
-                                end
-                                new = Dict(fert=>Dict(vacmax=>Dict(no_vac_to_cept=>Dict(no_vac_to_pos=>c))))
-                                try
-                                    count_d[fert][vacmax][no_vac_to_cept][no_vac_to_pos] += c
-                                    total_d[fert][vacmax][no_vac_to_cept] += c
-                                    vacmax -= 1
-                                catch
-                                    new = Dict(no_vac_to_pos=>c)
-                                    if fert in keys(count_d)
-
-
-                                        if vacmax in keys(count_d[fert])
-                                            count_d[fert][vacmax] = merge(merger_plus, count_d[fert][vacmax],Dict(no_vac_to_cept=>new))
-                                            total_d[fert][vacmax] = merge(+,total_d[fert][vacmax],Dict(no_vac_to_cept=>c))
-                                            vacmax -= 1
-                                        else
-                                            new_d = Dict(vacmax=>Dict(no_vac_to_cept=>Dict(no_vac_to_pos=>c)))
-                                            count_d[fert]= merge(count_d[fert],new_d)
-                                            new_dt = Dict(vacmax=>Dict(no_vac_to_cept=>c))
-                                            total_d[fert]=merge(total_d[fert],new_dt)
-                                            vacmax -= 1
-                                        end
-
+                        if fert > 0
+                            for e in 1:fert
+                                if e ==1
+                                    if last_cept == 0
+                                        vac_cept = 0
                                     else
-                                        new_d = Dict(fert=>Dict(vacmax=>Dict(no_vac_to_cept=>Dict(no_vac_to_pos=>c))))
-                                        merge!(count_d,new_d)
-                                        new_dt = Dict(fert=>Dict(vacmax=>Dict(no_vac_to_cept=>c)))
-                                        merge!(total_d,new_dt)
-                                        vacmax -= 1
+                                        vac_cept = length(findall(x->x=="", Filled[1:last_cept]))
                                     end
+
+                                    vac_current = length(findall(x->x=="", Filled[1:maps_to[e]]))
+                                    Filled[maps_to[e]] = "flibber"
+
+                                    new = Dict(fert=>Dict(vacmax=>Dict(vac_cept=>Dict(vac_current=>c))))
+                                    count_d = merge_four_layer(count_d, new)
+                                else
+                                    current = maps_to[e-1]
+                                    vacmax_adj = convert(Int,length(findall(x->x=="",Filled[current:length(Filled)])))
+
+
+                                    vac_cept = length(findall(x->x=="", Filled[1:last_cept]))
+
+                                    vac_current = length(findall(x->x=="", Filled[current:maps_to[e]]))
+                                    Filled[maps_to[e]] = "flibber"
+                                    new = Dict(fert=>Dict(vacmax_adj=>Dict(vac_cept=>Dict(vac_current=>c))))
+                                    count_d = merge_four_layer(count_d, new)
                                 end
-
-                                Filled[words] = "word;)"
-
+                                last_cept = convert(Int,ceil(mean(maps_to)))
+                                vacmax = vacmax-1
                             end
-
-                            last_cept = convert(Integer,ceil(mean(maps_to)))
                         end
-                    end
 
+                    end
                 if !isnan(null*c) & !isnan((length(eng)-2*null)*c)
                     count_p1 += null*c
                     count_p0 += abs(length(eng)-2*null)*c
@@ -377,8 +363,11 @@ function IBM5(Eng, Fre, iter, init, samp_align)
         for k1 in keys(count_d)
             for k2 in keys(count_d[k1])
                 for k3 in keys(count_d[k1][k2])
-                    merge!(alignments, Dict(k1=>Dict(k2=>Dict(k3=>Dict()))))
-                    alignments[k1][k2][k3] = Dict(keys(count_d[k1][k2][k3]).=>values(count_d[k1][k2][k3])./total_d[k1][k2][k3])
+                    for k4 in keys(count_d[k1][k2][k3])
+                        new = count_d[k1][k2][k3][k4]/sum(values(count_d[k1][k2][k3]))
+                        new = Dict(k1=>Dict(k2=>Dict(k3=>Dict(k4=>new))))
+                        alignments = merge_four_layer(alignments,new)
+                    end
                 end
             end
         end
