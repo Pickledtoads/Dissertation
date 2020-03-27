@@ -31,7 +31,7 @@ IBM4_fert <- read.csv(paste(File_Root,IBM4_Names[3], sep=""),encoding ="UTF-8")
 IBM4_null <- read.csv(paste(File_Root,IBM4_Names[4], sep=""),encoding ="UTF-8")
 
 # Load in the IBM5 data
-IBM5_Names <- c("IBM5_trans_12.csv","IBM5_align_12.csv","IBM5_fert_12.csv","IBM5_null_12.csv")
+IBM5_Names <- c("IBM5_trans_10.csv","IBM5_align_10.csv","IBM5_fert_10.csv","IBM5_null_10.csv")
 
 IBM5_trans <- read.csv(paste(File_Root,IBM5_Names[1], sep=""),encoding ="UTF-8")
 IBM5_align <- read.csv(paste(File_Root,IBM5_Names[2], sep=""),encoding ="UTF-8")
@@ -40,7 +40,7 @@ IBM5_null <- read.csv(paste(File_Root,IBM5_Names[4], sep=""),encoding ="UTF-8")
 
 
 
-french = unlist(strsplit("le parlement debout observe une minute de silence", split =" "))
+french = unlist(strsplit("je vous invite à vous lever pour cette minute de silence", split =" "))
 
 
 
@@ -322,7 +322,9 @@ IBM5_Translate <- function(french, IBM5_trans,IBM5_align,IBM5_fert,IBM5_null)
       # If the word is the first in the cept
       if (fert_current == 1){
         alignment <- align[align["fert"]==ferts[fert_index],]
+        print(vmax)
         alignment <- alignment[alignment$vac_max == vmax,]
+        print(alignment)
         alignment <- alignment[alignment$last_cept == last_cept, ]
         alignment <- alignment[alignment$rel_dist %in% 1:vmax, ]
         

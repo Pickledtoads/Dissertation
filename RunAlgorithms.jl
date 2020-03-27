@@ -82,11 +82,11 @@ include(joinpath(@__DIR__, "Scripts\\IBM5.jl"))
 Name6 = string(joinpath(@__DIR__, "Trained\\"),"IBM5_save_", n, ".jld")
 
 if isfile(Name6)
-    IBM5_save_ = load(Name6)["IBM5_save"]
+    IBM5_save = load(Name6)["IBM5_save"]
     println("loaded - IBM5_save" )
 
 else
-    IBM5_save = IBM5(English[1:n], French[1:n], 3, IBM4_save, IBM3_save["align"])
+    IBM5_save = IBM5(English[1:n], French[1:n], 1, IBM4_save, IBM3_save["align"])
     save(Name6, "IBM5_save", IBM5_save)
 end
 
