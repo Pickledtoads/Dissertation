@@ -1,51 +1,13 @@
 require(rhdf5)
 
 File_Root <- "C:/Users/julul/github/Dissertation/Trained/"
-
-# Load in the IBM1 data
-IBM1_Names <- c("IBM1_trans_100.csv")
-IBM1_trans <- read.csv(paste(File_Root,IBM2_Names[1], sep=""),encoding ="UTF-8")
-
-# Load in the IBM2 data
-IBM2_Names <- c("IBM2_trans_100.csv","IBM2_align_100.csv")
-IBM2_trans <- read.csv(paste(File_Root,IBM2_Names[1], sep=""),encoding ="UTF-8")
-IBM2_align <- read.csv(paste(File_Root,IBM2_Names[2], sep=""),encoding ="UTF-8")
-IBM2_align[IBM2_align["fre_len"]==12,]
-
-
-# Load in the IBM3 data
-IBM3_Names <- c("IBM3_trans_12.csv","IBM3_align_12.csv","IBM3_fert_12.csv","IBM3_null_12.csv")
-
-IBM3_trans <- read.csv(paste(File_Root,IBM3_Names[1], sep=""),encoding ="UTF-8")
-IBM3_align <- read.csv(paste(File_Root,IBM3_Names[2], sep=""),encoding ="UTF-8")
-IBM3_fert <- read.csv(paste(File_Root,IBM3_Names[3], sep=""),encoding ="UTF-8")
-IBM3_null <- read.csv(paste(File_Root,IBM3_Names[4], sep=""),encoding ="UTF-8")
-
-
-# Load in the IBM4 data
-IBM4_Names <- c("IBM4_trans_12.csv","IBM4_align_12.csv","IBM4_fert_12.csv","IBM4_null_12.csv")
-
-IBM4_trans <- read.csv(paste(File_Root,IBM4_Names[1], sep=""),encoding ="UTF-8")
-IBM4_align <- read.csv(paste(File_Root,IBM4_Names[2], sep=""),encoding ="UTF-8")
-IBM4_fert <- read.csv(paste(File_Root,IBM4_Names[3], sep=""),encoding ="UTF-8")
-IBM4_null <- read.csv(paste(File_Root,IBM4_Names[4], sep=""),encoding ="UTF-8")
-
-# Load in the IBM5 data
-IBM5_Names <- c("IBM5_trans_10.csv","IBM5_align_10.csv","IBM5_fert_10.csv","IBM5_null_10.csv")
-
-IBM5_trans <- read.csv(paste(File_Root,IBM5_Names[1], sep=""),encoding ="UTF-8")
-IBM5_align <- read.csv(paste(File_Root,IBM5_Names[2], sep=""),encoding ="UTF-8")
-IBM5_fert <- read.csv(paste(File_Root,IBM5_Names[3], sep=""),encoding ="UTF-8")
-IBM5_null <- read.csv(paste(File_Root,IBM5_Names[4], sep=""),encoding ="UTF-8")
-
-
-
-french = unlist(strsplit("je vous invite à vous lever pour cette minute de silence", split =" "))
-
-
-
-IBM1_Translate <-function(french,IBM1_trans)
+french = unlist(strsplit("je vous invite ? vous lever pour cette minute de silence", split =" "))
+IBM1_Translate <-function(french,n)
 {
+  # Load in the IBM1 data
+  IBM1_Names <- c(paste("IBM1_trans_",n,".csv", sep=""))
+  IBM1_trans <- read.csv(paste(File_Root,IBM1_Names[1], sep=""),encoding ="UTF-8")
+  
   french <- append(french, "null")
   eng <- c()
   for (f in 1:length(french)){
@@ -59,11 +21,14 @@ IBM1_Translate <-function(french,IBM1_trans)
   
 }
 
-IBM1_Translate(french, IBM1_trans)
 
-
-IBM2_Translate <- function(french,IBM2_trans,IBM2_align)
+IBM2_Translate <- function(french, n)
 {
+  # Load in the IBM2 data
+  IBM2_Names <- c(paste("IBM2_trans_",n,".csv"),paste("IBM2_align_",n,".csv"))
+  IBM2_trans <- read.csv(paste(File_Root,IBM2_Names[1], sep=""),encoding ="UTF-8")
+  IBM2_align <- read.csv(paste(File_Root,IBM2_Names[2], sep=""),encoding ="UTF-8")
+  
   # Add in the null word & save down the length of the sentence
   french <- append(french,"null")
   l_fre <- length(french)
@@ -85,8 +50,15 @@ IBM2_Translate <- function(french,IBM2_trans,IBM2_align)
 
 
 
-IBM3_Translate <- function(french, IBM3_trans,IBM3_align,IBM3_fert,IBM3_null)
+IBM3_Translate <- function(french, n)
 {
+  # Load in the IBM3 data
+  IBM3_Names <- c(paste("IBM3_trans_",n,".csv"),paste("IBM3_align_",n,".csv"),paste("IBM3_fert_",n,".csv"),paste("IBM3_null_",n,".csv"))
+  
+  IBM3_trans <- read.csv(paste(File_Root,IBM3_Names[1], sep=""),encoding ="UTF-8")
+  IBM3_align <- read.csv(paste(File_Root,IBM3_Names[2], sep=""),encoding ="UTF-8")
+  IBM3_fert <- read.csv(paste(File_Root,IBM3_Names[3], sep=""),encoding ="UTF-8")
+  IBM3_null <- read.csv(paste(File_Root,IBM3_Names[4], sep=""),encoding ="UTF-8")
   # Create a vector to contain the translation
   words <- c()
   ferts <- c()
@@ -159,10 +131,17 @@ IBM3_Translate <- function(french, IBM3_trans,IBM3_align,IBM3_fert,IBM3_null)
    return(translation)
 }
 
-IBM3_Translate(french, IBM3_trans,IBM3_align,IBM3_fert,IBM3_null)
 
-IBM4_Translate <- function(french, IBM4_trans,IBM4_align,IBM4_fert,IBM4_null)
+IBM4_Translate <- function(french, n)
 {
+  # Load in the IBM4 data
+  IBM4_Names <- c(paste("IBM4_trans_",n,".csv"),paste("IBM4_align_",n,".csv"),paste("IBM4_fert_",n,".csv"),paste("IBM4_null_",n,".csv"))
+  
+  IBM4_trans <- read.csv(paste(File_Root,IBM4_Names[1], sep=""),encoding ="UTF-8")
+  IBM4_align <- read.csv(paste(File_Root,IBM4_Names[2], sep=""),encoding ="UTF-8")
+  IBM4_fert <- read.csv(paste(File_Root,IBM4_Names[3], sep=""),encoding ="UTF-8")
+  IBM4_null <- read.csv(paste(File_Root,IBM4_Names[4], sep=""),encoding ="UTF-8")
+  
   # Create a vector to contain the translation
   words <- c()
   ferts <- c()
@@ -269,11 +248,18 @@ IBM4_Translate <- function(french, IBM4_trans,IBM4_align,IBM4_fert,IBM4_null)
   }
   return(translation)
 }
-IBM4_Translate(french, IBM4_trans,IBM4_align,IBM4_fert,IBM4_null)
 
 
 IBM5_Translate <- function(french, IBM5_trans,IBM5_align,IBM5_fert,IBM5_null)
 {
+  # Load in the IBM5 data
+  IBM5_Names <- c(paste("IBM5_trans_",n,".csv"),paste("IBM5_align_",n,".csv"),paste("IBM5_fert_",n,".csv"),paste("IBM5_null_",n,".csv"))
+  
+  IBM5_trans <- read.csv(paste(File_Root,IBM5_Names[1], sep=""),encoding ="UTF-8")
+  IBM5_align <- read.csv(paste(File_Root,IBM5_Names[2], sep=""),encoding ="UTF-8")
+  IBM5_fert <- read.csv(paste(File_Root,IBM5_Names[3], sep=""),encoding ="UTF-8")
+  IBM5_null <- read.csv(paste(File_Root,IBM5_Names[4], sep=""),encoding ="UTF-8")
+  
   # Create a vector to contain the translation
   words <- c()
   ferts <- c()
@@ -396,4 +382,4 @@ IBM5_Translate <- function(french, IBM5_trans,IBM5_align,IBM5_fert,IBM5_null)
   }
   return(translation)
 }
-IBM5_Translate(french, IBM5_trans,IBM5_align,IBM5_fert,IBM5_null)
+
