@@ -4,7 +4,7 @@ using HDF5, JLD, Base.Threads, Statistics,DataFrames,CSV
 
 French = readlines(joinpath(@__DIR__,"CleanedShortFrench.txt"))
 English = readlines(joinpath(@__DIR__,"CleanedShortEnglish.txt"))
-n = 10
+n = 10000
 
 include(joinpath(@__DIR__, "Prep_for_R.jl"))
 include(joinpath(@__DIR__, "Scripts\\UtilityFunctions.jl"))
@@ -42,11 +42,11 @@ if isfile(Name3)
     IBM2_save = load(Name3)["IBM2_save"]
     println("loaded - IBM2_save" )
 else
-    IBM2_save = IBM2(English[1:n], French[1:n], 25, IBM1_save)
+    IBM2_save = IBM2(English[1:n], French[1:n],25, IBM1_save)
     save(Name3, "IBM2_save", IBM2_save)
 end
 IBM2_R_Prep(IBM2_save,n)
-
+IBM2_save["trans"]
 
 # Now do IBM3
 include(joinpath(@__DIR__, "Scripts\\IBM3.jl"))

@@ -23,7 +23,7 @@ function IBM2(Eng, Fre, iter, init)
     # Run iter times
     for x in 1:iter
         # Initialize all variables to hold counts
-        count_Dict = Dict()
+        s_tot = Dict()
         count_s = zero_dict(copy(init))
         total_s = Dict(keys(Trans_Dict) .=> [0.0]*length(count_s))
         total_a = Dict()
@@ -41,7 +41,7 @@ function IBM2(Eng, Fre, iter, init)
                 for i in 1:length(f)
 
                     # find the log probability of translation
-                    latest = log(init[f[i]][e[j]])+log(align[align_key][j,i])
+                    latest = log(Trans_Dict[f[i]][e[j]])+log(align[align_key][j,i])
 
                     # Ignore the entries with a nan or infinite value
                     if isnan(latest) | isinf(latest)
@@ -50,20 +50,23 @@ function IBM2(Eng, Fre, iter, init)
 
                     # rescale the probability off the log scale
                     latest = MathConstants.e ^ latest
-                    latest = Dict(e[j] => latest)
+                    try
+                        s_tot[e[j]] += latest
+                    catch
+                        s_tot[e[j]] = latest
+                    end
 
                     # merge the new value with the storage dictionary
-                    merge!(+,count_Dict,latest)
+                    count_s
                 end
             end
 
             for j in 1:length(e)
-                tot_a = [0.0] * length(e)
                 for i in 1:length(f)
 
                     #   find the normalised translation probabilty for each
                     #   pair in the sentence
-                    c = convert(Float64,log(Trans_Dict[f[i]][e[j]])+log(align[align_key][j,i])-log(count_Dict[e[j]]))
+                    c = convert(Float64,log(Trans_Dict[f[i]][e[j]])+log(align[align_key][j,i])-log(s_tot[e[j]]))
                     c = MathConstants.e ^ c
                     c = convert(Float64, c)
 
@@ -93,8 +96,8 @@ function IBM2(Eng, Fre, iter, init)
             for en in keys(count_s[fr])
                 # divide each English word's probability by the sum of all
                 # potential translations of the French source word
-                count_s[fr][en] = log(count_s[fr][en])- log(total_s[fr])
-                count_s[fr][en] = MathConstants.e ^ count_s[fr][en]
+                new = log(count_s[fr][en])- log(total_s[fr])
+                count_s[fr][en] = MathConstants.e ^ new
             end
         end
         for align_key in keys(count_a)

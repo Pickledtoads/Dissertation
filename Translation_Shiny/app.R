@@ -44,8 +44,22 @@ server <- function(input, output) {
     french <- unlist(strsplit(input$input_Box,split = " "))
     if (model == "IBM 1"){
       translation <- IBM1_Translate(french, 10000)
-      output$output_Box <- renderText({"You pressed the button"})
+      output$output_Box <- renderText({paste(translation)})
     }
+    else if (model == "IBM 2"){
+      translation <- IBM2_Translate(french, 10000)
+      output$output_Box <- renderText({paste(translation)})
+    }
+    else if (model == "IBM 3"){
+      translation <- IBM3_Translate(french, 10000)
+      output$output_Box <- renderText({paste(translation)})
+    }
+    else if (model == "IBM 4"){
+      translation <- IBM4_Translate(french, 10000)
+      output$output_Box <- renderText({paste(translation)})
+    }
+    
+    
       
     
     

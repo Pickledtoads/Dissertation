@@ -1,7 +1,7 @@
 require(rhdf5)
 
 File_Root <- "C:/Users/julul/github/Dissertation/Trained/"
-french = unlist(strsplit("je vous invite ? vous lever pour cette minute de silence", split =" "))
+french = unlist(strsplit("je vous invite à vous lever pour cette minute de silence", split =" "))
 IBM1_Translate <-function(french,n)
 {
   # Load in the IBM1 data
@@ -25,7 +25,7 @@ IBM1_Translate <-function(french,n)
 IBM2_Translate <- function(french, n)
 {
   # Load in the IBM2 data
-  IBM2_Names <- c(paste("IBM2_trans_",n,".csv"),paste("IBM2_align_",n,".csv"))
+  IBM2_Names <- c(paste("IBM2_trans_",n,".csv", sep=""),paste("IBM2_align_",n,".csv", sep=""))
   IBM2_trans <- read.csv(paste(File_Root,IBM2_Names[1], sep=""),encoding ="UTF-8")
   IBM2_align <- read.csv(paste(File_Root,IBM2_Names[2], sep=""),encoding ="UTF-8")
   
@@ -53,7 +53,7 @@ IBM2_Translate <- function(french, n)
 IBM3_Translate <- function(french, n)
 {
   # Load in the IBM3 data
-  IBM3_Names <- c(paste("IBM3_trans_",n,".csv"),paste("IBM3_align_",n,".csv"),paste("IBM3_fert_",n,".csv"),paste("IBM3_null_",n,".csv"))
+  IBM3_Names <- c(paste("IBM3_trans_",n,".csv", sep=""),paste("IBM3_align_",n,".csv",sep=""),paste("IBM3_fert_",n,".csv", sep=""),paste("IBM3_null_",n,".csv", sep=""))
   
   IBM3_trans <- read.csv(paste(File_Root,IBM3_Names[1], sep=""),encoding ="UTF-8")
   IBM3_align <- read.csv(paste(File_Root,IBM3_Names[2], sep=""),encoding ="UTF-8")
@@ -121,13 +121,34 @@ IBM3_Translate <- function(french, n)
 
     }
     aligned <- aligned[aligned != ""]
+    if (is.na(alignment[1,1])){
+      aligned <- null_insert
+    }
     translation <- rep("", length(aligned))
+    fert_index = 1
+    fert_current = 1
+    
     for (f in 1:length(aligned)){
-      lex <- IBM3_trans[IBM3_trans["fre"]==aligned[f],]
+      if (fert_current == 1){
+        lex <- IBM3_trans[IBM3_trans["fre"]==aligned[f],]
+      }
+      else {
+        lex <- lex[lex$eng != eng,]
+      }
+      #return(lex)
       max_trans <- which.max(lex[,"prob"])[1]
       eng <- as.character(lex[,"eng"][max_trans])
       translation[f] <- eng
-    }
+      fert_current = fert_current+1
+      
+      if (fert_current == ferts[fert_index]){
+        fert_index = fert_index+1
+        fert_current = 0
+        last_cept <- as.integer(ceiling(mean(cept_map)))
+      }
+      
+      
+  }
    return(translation)
 }
 
@@ -135,13 +156,12 @@ IBM3_Translate <- function(french, n)
 IBM4_Translate <- function(french, n)
 {
   # Load in the IBM4 data
-  IBM4_Names <- c(paste("IBM4_trans_",n,".csv"),paste("IBM4_align_",n,".csv"),paste("IBM4_fert_",n,".csv"),paste("IBM4_null_",n,".csv"))
+  IBM4_Names <- c(paste("IBM4_trans_",n,".csv", sep=""),paste("IBM4_align_",n,".csv", sep=""),paste("IBM4_fert_",n,".csv", sep=""),paste("IBM4_null_",n,".csv", sep=""))
   
   IBM4_trans <- read.csv(paste(File_Root,IBM4_Names[1], sep=""),encoding ="UTF-8")
   IBM4_align <- read.csv(paste(File_Root,IBM4_Names[2], sep=""),encoding ="UTF-8")
   IBM4_fert <- read.csv(paste(File_Root,IBM4_Names[3], sep=""),encoding ="UTF-8")
   IBM4_null <- read.csv(paste(File_Root,IBM4_Names[4], sep=""),encoding ="UTF-8")
-  
   # Create a vector to contain the translation
   words <- c()
   ferts <- c()
@@ -193,7 +213,7 @@ IBM4_Translate <- function(french, n)
         mapping <- last_cept+alignment[greatest_prob,"rel_dist"]
         aligned[mapping] <- null_insert[f] 
         cept_map <- append(cept_map,mapping)
-
+        
         
       }
       # otherwise
@@ -208,20 +228,9 @@ IBM4_Translate <- function(french, n)
         cept_map <- append(cept_map,mapping)
         
       }
-      if (fert_current == ferts[fert_index]){
-          
-          fert_index = fert_index+1
-          fert_current = 0
-          last_cept <- as.integer(ceiling(mean(cept_map)))
-          print(c(last_cept, cept_map))
-          cept_map <- c()
-      }
-      fert_current <- fert_current+1
     }
-    
-    
   }
-
+ 
   translation <- rep("", length(aligned))
   fert_index = 1
   fert_current = 1
@@ -248,6 +257,7 @@ IBM4_Translate <- function(french, n)
   }
   return(translation)
 }
+
 
 
 IBM5_Translate <- function(french, IBM5_trans,IBM5_align,IBM5_fert,IBM5_null)
@@ -296,7 +306,6 @@ IBM5_Translate <- function(french, IBM5_trans,IBM5_align,IBM5_fert,IBM5_null)
   last_cept <- 0
   cept_map <- c()
   vmax <- length(aligned)
-  print(null_insert)
   # The next step is to deal with alignment
   for (f in 1:length(null_insert)){
     # Special case where the word is a null token
@@ -308,22 +317,17 @@ IBM5_Translate <- function(french, IBM5_trans,IBM5_align,IBM5_fert,IBM5_null)
       # If the word is the first in the cept
       if (fert_current == 1){
         alignment <- align[align["fert"]==ferts[fert_index],]
-        print(vmax)
         alignment <- alignment[alignment$vac_max == vmax,]
-        print(alignment)
         alignment <- alignment[alignment$last_cept == last_cept, ]
         alignment <- alignment[alignment$rel_dist %in% 1:vmax, ]
         
         greatest_prob <- which.max(unlist(alignment["prob"]))
-        print(greatest_prob)
         # find the indices of the missing entries
         empties <- which(aligned == "")
         mapping <- empties[alignment[greatest_prob,"rel_dist"]]
-        print(mapping)
         aligned[mapping] <- null_insert[f] 
         cept_map <- append(cept_map,mapping)
         vmax = vmax-1
-        print(cept_map)
       }
       # otherwise
       else {
@@ -338,7 +342,6 @@ IBM5_Translate <- function(french, IBM5_trans,IBM5_align,IBM5_fert,IBM5_null)
         mapping <- empties_1[alignment[greatest_prob,"rel_dist"]]
         aligned[mapping] <- null_insert[f] 
         cept_map <- append(cept_map,mapping)
-        print(cept_map)
         vmax = vmax-1
         
       }
