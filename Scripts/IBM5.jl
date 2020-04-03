@@ -137,16 +137,15 @@ function prob_IBM5(eng,fre,a,dict, align, fert, null)
             end
 
             phi = length([k for (k,v) in a if v==length(fre)])
-            # if there are lots of null tokens the "choose" term needs
-            # to be found differently
-
+                                            
+            # if there are a *small* number of null tokens
             if length(eng)>(2*phi)
                 N = length(eng)-phi
                 x = phi
                 N_x = N-x
 
                 numerator = 0.5*log(2*MathConstants.pi*N)+N*log(N/MathConstants.e)
-
+                # Use stirling's approximation for numerical efficiency
                 if x != 0
                     denominator = 0.5*log(2*MathConstants.pi*x)+0.5*log(2*MathConstants.pi*N_x)+x*log(x/MathConstants.e)+N_x*log(N_x/MathConstants.e)
                 elseif x == 0
@@ -156,11 +155,14 @@ function prob_IBM5(eng,fre,a,dict, align, fert, null)
 
                 nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
                 fertility += MathConstants.e^nulls
+            # if there are lots of null tokens the "choose" term needs
+            # to be found differently
             else
+                                                
                 N = phi+1
                 x = 2*phi+1-length(eng)
                 N_x = N-x
-
+                # Use stirling's approximation for numerical efficiency
                 numerator = 0.5*log(N)+N*log(N/MathConstants.e)
                 denominator = 0.5*log(2*MathConstants.pi*x*N_x)+x*log(x/MathConstants.e)+N_x*log(N_x/MathConstants.e)
 
@@ -178,22 +180,32 @@ function prob_IBM5(eng,fre,a,dict, align, fert, null)
     last_cept = 0
     Filled = repeat([""], length(eng))
     for i in 1:length(fre)
+        # find all enlgish words that map to the ith french word
         maps_to = sort([k for (k,v) in a if v==i])
         fert = length(maps_to)
+        # maximum number of vacencies in the translated sentence
         vacmax = length(Filled)
         if fert>0
             for words in maps_to
+                # count number of vacencies to centre of last cept & current eng word position
                 no_vac_to_cept = length(findall(x->x=="", Filled[1:last_cept]))
                 no_vac_to_pos = length(findall(x->x=="", Filled[1:words]))
-                if maps_to[1]!=words
+                # if this is not the first word in a cept consider only vacencies after the previous word 
+                # in cept
+                vacmax2 = vacmax
+                if maps_to[1]!=words                                                                        #
+                    vacmax2 = length(Filled[findall(x->x=="",Filled[last:length(Filled)])])
                     no_vac_to_pos = no_vac_to_pos-length(Filled[findall(x->x=="",Filled[1:maps_to[1]])])
                 end
+                # if possible increment the count
                 try
-                    new = sum(log.(align[fert][vacmax][no_vac_to_cept][no_vac_to_pos]))
+                    new = sum(log.(align[fert][vacmax2][no_vac_to_cept][no_vac_to_pos]))
                     alignment += MathConstants.e^new
                 catch
 
                 end
+                #remove the vacency we've just filled and keep track of the last position filled                                                   
+                last = words
                 Filled[words] = "word"
                 vacmax -= 1
             end
@@ -250,8 +262,8 @@ function IBM5(Eng, Fre, iter, init, samp_align)
         end
 
         @threads for s in 1:length(Eng)
+                                                                    
             # split up our words
-
             sent = Sent_Split(Eng[s],Fre[s])
             eng = sent[1]
             fre = sent[2]
@@ -272,6 +284,7 @@ function IBM5(Eng, Fre, iter, init, samp_align)
 
             for a in A
                 null = 0
+                                                                        
                 # need to use a different prob expression after the first iteration
                 if it == 1
                     c = prob_IBM4(eng, fre, a, init["trans"],init["align"], init["fert"], init["null"])/c_tot
@@ -279,7 +292,7 @@ function IBM5(Eng, Fre, iter, init, samp_align)
                     c = prob_IBM5(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
                 end
 
-
+                # determine the lexical counts
                 for e in 1:length(eng)
                     count_t[fre[a[e]]][eng[e]] += c
                     total_t[fre[a[e]]] += c
@@ -288,24 +301,29 @@ function IBM5(Eng, Fre, iter, init, samp_align)
                         null += 1
                     end
                 end
+                                                                        
                 # we now add the count to the rel_distortion counts
                     last_cept = 0
                     Filled = repeat([""], length(eng))
-
+                                                                        
+                    # total number of vacencies
                     vacmax = length(Filled)
                     for f in 1:length(fre)
+                        # find the locations of the eng word that map to the ith fre word
                         maps_to = sort([k for (k,v) in a if v==f])
-
                         fert = length(maps_to)
                         if fert > 0
                             for e in 1:fert
-                                if e ==1
+                                if e == 1     
+                                                                                                        
+                                    # find the number of vacencies up to the last cept's centre                                                                                                         
                                     if last_cept == 0
                                         vac_cept = 0
                                     else
                                         vac_cept = length(findall(x->x=="", Filled[1:last_cept]))
                                     end
-
+                                                                                                        
+                                    # Number of vacencies up to the current word
                                     vac_current = length(findall(x->x=="", Filled[1:maps_to[e]]))
                                     Filled[maps_to[e]] = "flibber"
 
