@@ -386,3 +386,56 @@ IBM5_Translate <- function(french, IBM5_trans,IBM5_align,IBM5_fert,IBM5_null)
   return(translation)
 }
 
+BLEU <- function(refer, trans)
+{
+  ref <- unlist(strsplit(refer, split = " "))
+  sent <- unlist(strsplit(trans, split = " "))
+  
+  
+  if (length(ref) <= length(sent)){
+    bp <- 1
+  }
+  else {
+    bp <- exp(1-length(ref)/length(sent))
+  }
+  
+  total <- 0
+  
+  for (i in 1:min(c(4,length(sent), length(ref)))){
+    
+    if (i != 1){
+      L <- c()
+      rence <- c()
+      for (step in 1:(length(sent)-(i))){
+        L <- append(L, paste(sent[step:(step+i)], sep=" ", collapse=" "))
+        print(L)
+      }
+      for (step in 1:(length(ref)-(i))){
+        rence <- append(rence, paste(ref[step:(step+i)], sep=" ", collapse=" "))
+      }
+      
+      
+    }
+    else{
+      L <- sent
+      rence <- ref
+    }
+    count = 0
+    for (ngon in 1:length(L)){
+      print(L[ngon])
+      if (L[ngon] %in% rence){
+        count = count + 1
+        rence <- rence[-ngon]
+        
+      } 
+    }
+    
+    
+    total = total + count/length(L)
+    
+    
+  }
+  total <- bp*total/4
+  return(total)
+  
+}
