@@ -1,115 +1,3 @@
-function hillclimbing(eng, fre, a, jp, dict, align, fert, null)
-    # Purpose:  Search the local area for the most probable alignment
-    # Inputs :  eng - the english sentence
-    #           fre - the french sentence
-    #           a - the starting point we use the best IBM2 aligment for this
-    #           jp - the pegged alignment point
-    #           dict - dictionary of translation probabilities
-    #           align - dictionary of alignment probabilites
-    #           fert - dictionary of fertility probabilites
-    #           null - the probability of null insertion
-    # Outputs:  a - the most probable alignment in the locality of our seed alignment
-    lens = [length(eng), length(fre)]
-
-    # boolean to determine when we converge
-    go = true
-
-    # loop until convergence
-    while go == true
-        a_old = copy(a)
-        neighbors = neighboring(a, jp, lens)
-
-        for n in neighbors
-
-            # Check if the latest option has a greater probability
-            if prob(eng,fre,n,dict,align,fert, null) > prob(eng,fre,a,dict,align,fert, null)
-                a = n
-            end
-        end
-
-        # if we've looped through with no change end loop
-        if a == a_old
-           go = false
-        end
-   end
-
-   return(a)
-end
-
-
-function neighboring(a, jp, lens)
-    # Purpose:  Generate the alignments neighboring the input alignment
-    # Inputs :  a - the most probable alignment under the IBM 2 model
-    #           jp - the pegged alignment point
-    #           lens - the length of the english and french sentences
-    # Outputs:  N - a set of all the neighbours of a
-
-    N = []
-    push!(N,a)
-    notpegged = setdiff(1:lens[1], jp)
-    for j in notpegged
-        for i in 1:lens[2]
-            a_new = copy(a)
-            a_new[j] = i
-            push!(N,a_new)
-        end
-    end
-    for j1 in notpegged
-        for j2 in setdiff(notpegged, j1)
-            a_new = copy(a)
-            a_new[j1] = a[j2]
-            a_new[j2] = a[j1]
-            push!(N, a_new)
-        end
-    end
-    return(N)
-end
-
-
-# I chose to base the initial alignment on the IBM 3 alignment function
-# Finding the best starting point based on the IBM 4 is too computationally intensive.
-function sample(eng, fre, dict, align,fert,null)
-    # Purpose:  Produces a sample from the space of alignment functions
-    # Inputs :  eng - English sentence broken into tokens
-    #           fre - French sentence broken into tokens
-    #           dict - lexical probability distribution
-    #           align - aligment distribution
-    #           fert - fertility distribution
-    #           null - null insertion distribution
-    # Outputs:  a array containing a sample of the highest probability density
-    #           alignment in the alignment space
-
-    # select the appropriate alignment distribution
-    a = Dict()
-    align_key = hcat(string(length(eng)),string(length(fre)))
-    align_dist = align[align_key]
-    A = []
-
-    # we peg each english word in turn
-    for j in 1:length(eng)
-        for i in 1:length(fre)
-            a[j] = i
-            # Now we find the optimal alignment - using the IBM2 aligment probs
-            for j2 in setdiff(1:length(eng),j)
-                align_vec = align_dist[j2, :]
-                probs = []
-                for i2 in 1:length(fre)
-                    push!(probs, dict[fre[i2]][eng[j2]])
-                end
-                probs = probs.*align_vec
-
-                a[j2] = argmax(probs)
-            end
-            # Now we find the max alignment using hillclimbing
-            lens = [length(eng),length(fre)]
-            a = hillclimbing(eng,fre,a, j,dict,align,fert,null)
-            # finally add the optimal aligment and it's neighbors to the sample
-            append!(A, neighboring(a,j,lens))
-        end
-    end
-    return(A)
-end
-
 function prob_IBM5(eng,fre,a,dict, align, fert, null)
     # Purpose:  find the probability of a translation using the current distributions
     # Inputs :  eng - English sentence broken into tokens
@@ -144,8 +32,10 @@ function prob_IBM5(eng,fre,a,dict, align, fert, null)
                 x = phi
                 N_x = N-x
 
-                numerator = 0.5*log(2*MathConstants.pi*N)+N*log(N/MathConstants.e)
                 # Use stirling's approximation for numerical efficiency
+                numerator = 0.5*log(2*MathConstants.pi*N)+N*log(N/MathConstants.e)
+
+                # case where fertility is zero and where it isn't
                 if x != 0
                     denominator = 0.5*log(2*MathConstants.pi*x)+0.5*log(2*MathConstants.pi*N_x)+x*log(x/MathConstants.e)+N_x*log(N_x/MathConstants.e)
                 elseif x == 0
@@ -162,6 +52,7 @@ function prob_IBM5(eng,fre,a,dict, align, fert, null)
                 N = phi+1
                 x = 2*phi+1-length(eng)
                 N_x = N-x
+
                 # Use stirling's approximation for numerical efficiency
                 numerator = 0.5*log(N)+N*log(N/MathConstants.e)
                 denominator = 0.5*log(2*MathConstants.pi*x*N_x)+x*log(x/MathConstants.e)+N_x*log(N_x/MathConstants.e)
@@ -246,7 +137,8 @@ function IBM5(Eng, Fre, iter, init, samp_align)
     # Outputs:  A dictionary containing translation, alignment, fertility
     #           and null insertion probabilities
 
-    init = Dict("trans"=>copy(init["trans"]),"align"=>copy(init["align"]), "fert"=>copy(init["fert"]), "null"=>copy(init["null"]))
+    init = Dict("trans"=>copy(init["trans"]),"align"=>copy(init["align"]),
+                "fert"=>copy(init["fert"]), "null"=>copy(init["null"]))
 
     for it in 1:iter
         # initialise the count variables
@@ -291,8 +183,10 @@ function IBM5(Eng, Fre, iter, init, samp_align)
 
                 # need to use a different prob expression after the first iteration
                 if it == 1
+                    # determine the increment for this alignment
                     c = prob_IBM4(eng, fre, a, init["trans"],init["align"], init["fert"], init["null"])/c_tot
                 else
+                    # determine the increment for this alignment
                     c = prob_IBM5(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
                 end
 
@@ -425,7 +319,8 @@ function IBM5(Eng, Fre, iter, init, samp_align)
         p0 = 1 - p1
 
         # redefine the lastest state of the model
-        init = Dict("trans"=> copy(Translation_Dict),"align"=>copy(alignments),"fert"=>copy(fertilities), "null" => [p1,p0])
+        init = Dict("trans"=> copy(Translation_Dict),"align"=>copy(alignments),
+                    "fert"=>copy(fertilities), "null" => [p1,p0])
 
     end
     return(init)
