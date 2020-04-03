@@ -2,10 +2,12 @@
 # Import all required packages
 using HDF5, JLD, Base.Threads, Statistics,DataFrames,CSV
 
+# Load in the data
 French = readlines(joinpath(@__DIR__,"CleanedShortFrench.txt"))
 English = readlines(joinpath(@__DIR__,"CleanedShortEnglish.txt"))
 n = 10000
 
+# Import functions needed for initialising the IBM 1
 include(joinpath(@__DIR__, "Prep_for_R.jl"))
 include(joinpath(@__DIR__, "Scripts\\UtilityFunctions.jl"))
 include(joinpath(@__DIR__, "Scripts\\IBM_Initialize.jl"))
@@ -75,8 +77,11 @@ else
     IBM4_save = IBM4(English[1:n], French[1:n], 1, IBM3_save, IBM3_save["align"])
     save(Name5, "IBM4_save", IBM4_save)
 end
+
 # Now output those data-files to an R-friendly format
 IBM4_R_Prep(IBM4_save,n)
+
+
 # Finally IBM5 🍰
 include(joinpath(@__DIR__, "Scripts\\IBM5.jl"))
 Name6 = string(joinpath(@__DIR__, "Trained\\"),"IBM5_save_", n, ".jld")

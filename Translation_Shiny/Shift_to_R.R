@@ -2,8 +2,12 @@ require(rhdf5)
 
 File_Root <- "C:/Users/julul/github/Dissertation/Trained/"
 french = unlist(strsplit("je vous invite à vous lever pour cette minute de silence", split =" "))
-IBM1_Translate <-function(french,n)
-{
+IBM1_Translate <-function(french,n){
+  # Purpose:  to apply the IBM1 model to translate a sentence in french
+  # Inputs:   french - the french sentence
+  #           n - the number of sentences used to train the model
+  # Outputs:  the french sentence translated to english
+  
   # Load in the IBM1 data
   IBM1_Names <- c(paste("IBM1_trans_",n,".csv", sep=""))
   IBM1_trans <- read.csv(paste(File_Root,IBM1_Names[1], sep=""),encoding ="UTF-8")
@@ -22,8 +26,12 @@ IBM1_Translate <-function(french,n)
 }
 
 
-IBM2_Translate <- function(french, n)
-{
+IBM2_Translate <- function(french, n){
+  # Purpose:  to apply the IBM2 model to translate a sentence in french
+  # Inputs:   french - the french sentence
+  #           n - the number of sentences used to train the model
+  # Outputs:  the french sentence translated to english
+  
   # Load in the IBM2 data
   IBM2_Names <- c(paste("IBM2_trans_",n,".csv", sep=""),paste("IBM2_align_",n,".csv", sep=""))
   IBM2_trans <- read.csv(paste(File_Root,IBM2_Names[1], sep=""),encoding ="UTF-8")
@@ -50,8 +58,12 @@ IBM2_Translate <- function(french, n)
 
 
 
-IBM3_Translate <- function(french, n)
-{
+IBM3_Translate <- function(french, n){
+  # Purpose:  to apply the IBM3 model to translate a sentence in french
+  # Inputs:   french - the french sentence
+  #           n - the number of sentences used to train the model
+  # Outputs:  the french sentence translated to english
+  
   # Load in the IBM3 data
   IBM3_Names <- c(paste("IBM3_trans_",n,".csv", sep=""),paste("IBM3_align_",n,".csv",sep=""),paste("IBM3_fert_",n,".csv", sep=""),paste("IBM3_null_",n,".csv", sep=""))
   
@@ -153,8 +165,12 @@ IBM3_Translate <- function(french, n)
 }
 
 
-IBM4_Translate <- function(french, n)
-{
+IBM4_Translate <- function(french, n){
+  # Purpose:  to apply the IBM4 model to translate a sentence in french
+  # Inputs:   french - the french sentence
+  #           n - the number of sentences used to train the model
+  # Outputs:  the french sentence translated to english
+  
   # Load in the IBM4 data
   IBM4_Names <- c(paste("IBM4_trans_",n,".csv", sep=""),paste("IBM4_align_",n,".csv", sep=""),paste("IBM4_fert_",n,".csv", sep=""),paste("IBM4_null_",n,".csv", sep=""))
   
@@ -260,8 +276,12 @@ IBM4_Translate <- function(french, n)
 
 
 
-IBM5_Translate <- function(french, IBM5_trans,IBM5_align,IBM5_fert,IBM5_null)
-{
+IBM5_Translate <- function(french, IBM5_trans,IBM5_align,IBM5_fert,IBM5_null){
+  # Purpose:  to apply the IBM5 model to translate a sentence in french
+  # Inputs:   french - the french sentence
+  #           n - the number of sentences used to train the model
+  # Outputs:  the french sentence translated to english
+  
   # Load in the IBM5 data
   IBM5_Names <- c(paste("IBM5_trans_",n,".csv"),paste("IBM5_align_",n,".csv"),paste("IBM5_fert_",n,".csv"),paste("IBM5_null_",n,".csv"))
   
@@ -386,12 +406,17 @@ IBM5_Translate <- function(french, IBM5_trans,IBM5_align,IBM5_fert,IBM5_null)
   return(translation)
 }
 
-BLEU <- function(refer, trans)
-{
+BLEU <- function(refer, trans){
+  # Purpose:  To calculate the BLEU for a translated sentence
+  # Input:    refer - a correct translation to use as a comparison
+  #           trans - our translation to compare to 
+  # Output:   The BLEU score for the reference-translation pair
+  
+  # split the words into vectors
   ref <- unlist(strsplit(refer, split = " "))
   sent <- unlist(strsplit(trans, split = " "))
   
-  
+  # calculate the brevity penalty
   if (length(ref) <= length(sent)){
     bp <- 1
   }
@@ -399,43 +424,60 @@ BLEU <- function(refer, trans)
     bp <- exp(1-length(ref)/length(sent))
   }
   
+  # initialise the total
   total <- 0
   
   for (i in 1:min(c(4,length(sent), length(ref)))){
     
+    # if we have ngons of length greater than one
     if (i != 1){
       L <- c()
       rence <- c()
+      # grab every collection of n words that are next to one another in the translation
       for (step in 1:(length(sent)-(i))){
         L <- append(L, paste(sent[step:(step+i)], sep=" ", collapse=" "))
         print(L)
       }
+      
+      # grab every collection of n words that are next to one another in the reference
       for (step in 1:(length(ref)-(i))){
         rence <- append(rence, paste(ref[step:(step+i)], sep=" ", collapse=" "))
       }
       
       
     }
+    # if n = 1 set L and rence
     else{
       L <- sent
       rence <- ref
     }
+    
+    # initialise the count
     count = 0
+    
+    # for each of the ngons in L
     for (ngon in 1:length(L)){
-      print(L[ngon])
       if (L[ngon] %in% rence){
+        
+        # increment the count
         count = count + 1
+        
+        # remove the matched n-gon from rence
         rence <- rence[-ngon]
         
       } 
     }
     
-    
+    # update the total
     total = total + count/length(L)
     
     
   }
+  
+  # find the average total over all n
   total <- bp*total/4
+  
+  # return the total
   return(total)
   
 }
