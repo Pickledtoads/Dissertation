@@ -137,7 +137,7 @@ function prob_IBM5(eng,fre,a,dict, align, fert, null)
             end
 
             phi = length([k for (k,v) in a if v==length(fre)])
-                                            
+
             # if there are a *small* number of null tokens
             if length(eng)>(2*phi)
                 N = length(eng)-phi
@@ -158,7 +158,7 @@ function prob_IBM5(eng,fre,a,dict, align, fert, null)
             # if there are lots of null tokens the "choose" term needs
             # to be found differently
             else
-                                                
+
                 N = phi+1
                 x = 2*phi+1-length(eng)
                 N_x = N-x
@@ -187,16 +187,19 @@ function prob_IBM5(eng,fre,a,dict, align, fert, null)
         vacmax = length(Filled)
         if fert>0
             for words in maps_to
+
                 # count number of vacencies to centre of last cept & current eng word position
                 no_vac_to_cept = length(findall(x->x=="", Filled[1:last_cept]))
                 no_vac_to_pos = length(findall(x->x=="", Filled[1:words]))
-                # if this is not the first word in a cept consider only vacencies after the previous word 
+
+                # if this is not the first word in a cept consider only vacencies after the previous word
                 # in cept
                 vacmax2 = vacmax
                 if maps_to[1]!=words                                                                        #
                     vacmax2 = length(Filled[findall(x->x=="",Filled[last:length(Filled)])])
                     no_vac_to_pos = no_vac_to_pos-length(Filled[findall(x->x=="",Filled[1:maps_to[1]])])
                 end
+
                 # if possible increment the count
                 try
                     new = sum(log.(align[fert][vacmax2][no_vac_to_cept][no_vac_to_pos]))
@@ -204,7 +207,7 @@ function prob_IBM5(eng,fre,a,dict, align, fert, null)
                 catch
 
                 end
-                #remove the vacency we've just filled and keep track of the last position filled                                                   
+                #remove the vacency we've just filled and keep track of the last position filled
                 last = words
                 Filled[words] = "word"
                 vacmax -= 1
@@ -226,7 +229,6 @@ function prob_IBM5(eng,fre,a,dict, align, fert, null)
 
     # Return the probability
     prob = MathConstants.e^(log(lex)+log(fertility))
-
     return(prob)
 
 end
@@ -262,12 +264,13 @@ function IBM5(Eng, Fre, iter, init, samp_align)
         end
 
         @threads for s in 1:length(Eng)
-                                                                    
+
             # split up our words
             sent = Sent_Split(Eng[s],Fre[s])
             eng = sent[1]
             fre = sent[2]
 
+            # generate a large sample of highest density alignments
             A = sample(eng, fre,init["trans"], samp_align, init["fert"], init["null"])
             c_tot = 0
 
@@ -282,9 +285,10 @@ function IBM5(Eng, Fre, iter, init, samp_align)
                 end
             end
 
+            # iterate through each of the generated alignments
             for a in A
                 null = 0
-                                                                        
+
                 # need to use a different prob expression after the first iteration
                 if it == 1
                     c = prob_IBM4(eng, fre, a, init["trans"],init["align"], init["fert"], init["null"])/c_tot
@@ -301,11 +305,11 @@ function IBM5(Eng, Fre, iter, init, samp_align)
                         null += 1
                     end
                 end
-                                                                        
+
                 # we now add the count to the rel_distortion counts
                     last_cept = 0
                     Filled = repeat([""], length(eng))
-                                                                        
+
                     # total number of vacencies
                     vacmax = length(Filled)
                     for f in 1:length(fre)
@@ -314,45 +318,64 @@ function IBM5(Eng, Fre, iter, init, samp_align)
                         fert = length(maps_to)
                         if fert > 0
                             for e in 1:fert
-                                if e == 1     
-                                                                                                        
-                                    # find the number of vacencies up to the last cept's centre                                                                                                         
+
+                                # if this is the first word in the cept
+                                if e == 1
+
+                                    # find the number of vacencies up to the last cept's centre
                                     if last_cept == 0
                                         vac_cept = 0
                                     else
                                         vac_cept = length(findall(x->x=="", Filled[1:last_cept]))
                                     end
-                                                                                                        
+
                                     # Number of vacencies up to the current word
                                     vac_current = length(findall(x->x=="", Filled[1:maps_to[e]]))
                                     Filled[maps_to[e]] = "flibber"
 
                                     new = Dict(fert=>Dict(vacmax=>Dict(vac_cept=>Dict(vac_current=>c))))
                                     count_d = merge_four_layer(count_d, new)
+
+                                # if this is a word after the first in a cept
                                 else
+                                    # where did the preceeding word map to
                                     current = maps_to[e-1]
-                                    vacmax_adj = convert(Int,length(findall(x->x=="",Filled[current:length(Filled)])))
 
+                                    # how many vacencies after the last word in cept
+                                    vacmax_adj = convert(Int,length(findall(x->x=="",
+                                                         Filled[current:length(Filled)])))
 
-                                    vac_cept = length(findall(x->x=="", Filled[1:last_cept]))
+                                    vac_cept = length(findall(x->x=="",
+                                                      Filled[1:last_cept]))
 
-                                    vac_current = length(findall(x->x=="", Filled[current:maps_to[e]]))
+                                    vac_current = length(findall(x->x=="",
+                                                         Filled[current:maps_to[e]]))
+
+                                    # fill the correct vacency and iterate the correct count
                                     Filled[maps_to[e]] = "flibber"
                                     new = Dict(fert=>Dict(vacmax_adj=>Dict(vac_cept=>Dict(vac_current=>c))))
                                     count_d = merge_four_layer(count_d, new)
                                 end
+
+                                # find the centre of this cept & deincrement vacmax
                                 last_cept = convert(Int,ceil(mean(maps_to)))
                                 vacmax = vacmax-1
                             end
                         end
 
                     end
+
+                # increment the null insertion probabilities
                 if !isnan(null*c) & !isnan((length(eng)-2*null)*c)
                     count_p1 += null*c
                     count_p0 += abs(length(eng)-2*null)*c
                 end
+
+                # calculate the fertlity counts
                 for f in 1:length(fre)
                     fertility = 0
+
+                    # find the number of english words that map to each french word
                     for e in 1:length(eng)
                         if f == a[e]
                                 fertility += 1
@@ -369,6 +392,7 @@ function IBM5(Eng, Fre, iter, init, samp_align)
         alignments = Dict()
 
         fertilities = copy(count_f)
+
         # recalculate the translation distribution
         for i in 1:length(Translation_Dict)
             fre = collect(keys(Translation_Dict))[i]
@@ -377,7 +401,8 @@ function IBM5(Eng, Fre, iter, init, samp_align)
                 Translation_Dict[fre][eng] = count_t[fre][eng]/ total_t[fre]
             end
         end
-        # Recalculate the alignment distribution
+
+        # Normalise the alignment distribution
         for k1 in keys(count_d)
             for k2 in keys(count_d[k1])
                 for k3 in keys(count_d[k1][k2])
@@ -389,14 +414,19 @@ function IBM5(Eng, Fre, iter, init, samp_align)
                 end
             end
         end
-        # Recalculate the fertility distribution
+        # Normalise the fertility distribution
         for f in collect(keys(fertilities))
             normed_vals = values(fertilities[f])./ sum(values(fertilities[f]))
             fertilities[f] = Dict(keys(fertilities[f]).=> normed_vals)
         end
+
+        # Recalculate the null insertion probabilities
         p1 = count_p1/(count_p1+count_p0)
         p0 = 1 - p1
+
+        # redefine the lastest state of the model
         init = Dict("trans"=> copy(Translation_Dict),"align"=>copy(alignments),"fert"=>copy(fertilities), "null" => [p1,p0])
+
     end
     return(init)
 end
