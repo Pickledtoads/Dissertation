@@ -19,6 +19,7 @@ function IBM2(Eng, Fre, iter, init)
 
     # needed later when gathering counts
     count_a = zero_align(align)
+    alignment = copy(count_a)
 
     # Run iter times
     for x in 1:iter
@@ -44,7 +45,7 @@ function IBM2(Eng, Fre, iter, init)
                     latest = log(Trans_Dict[f[i]][e[j]])+log(align[align_key][j,i])
 
                     # Ignore the entries with a nan or infinite value
-                    if isnan(latest) | isinf(latest)
+                    if isnan(latest)
                         latest = 0
                     end
 
@@ -55,9 +56,6 @@ function IBM2(Eng, Fre, iter, init)
                     catch
                         s_tot[e[j]] = latest
                     end
-
-                    # merge the new value with the storage dictionary
-                    count_s
                 end
             end
 
@@ -84,11 +82,6 @@ function IBM2(Eng, Fre, iter, init)
 
             #   this expression finds the total count for each column of the
             #   alignment probability distribution
-            if align_key in keys(total_a)
-                total_a[align_key] .+= sum(count_a[align_key],dims=2)
-            else
-                total_a[align_key] = sum(count_a[align_key],dims=2)
-            end
         end
 
         # We now refresh our estimates for the probability distributions
@@ -100,18 +93,18 @@ function IBM2(Eng, Fre, iter, init)
                 count_s[fr][en] = MathConstants.e ^ new
             end
         end
-        for align_key in keys(count_a)
-            for j in 1:size(count_a[align_key])[1]
-                for i in 1:size(count_a[align_key])[2]
+        for align_key in keys(alignment)
+            for j in 1:size(alignment[align_key])[1]
+                for i in 1:size(alignment[align_key])[2]
                     # divide each entry by the sum of the row it is in
-                    count_a[align_key][j,i] = log(count_a[align_key][j,i]) - log(total_a[align_key][j])
-                    count_a[align_key][j,i] = MathConstants.e ^ count_a[align_key][j,i]
+                    new = log(count_a[align_key][j,i]) - log(sum(count_a[align_key][j,i], dims=2)[j])
+                    alignment[align_key][j,i] = MathConstants.e ^ new
                 end
             end
         end
 
         # reset the intial values for the next iteration
-        align = count_a
+        align = alignment
         Trans_Dict = count_s
     end
     # output the updated estimates

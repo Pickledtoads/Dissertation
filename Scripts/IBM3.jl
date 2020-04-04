@@ -285,12 +285,6 @@ function IBM3(Eng, Fre, iter, init)
                     end
                 end
 
-                # increment the distortion counts
-                if align_key in keys(total_d)
-                    total_d[align_key] .+= sum(count_d[align_key],dims=1)
-                else
-                    total_d[align_key] = sum(count_d[align_key],dims=1)
-                end
 
                 # increment the null insertion probabilities
                 if !isnan(null*c) & !isnan((length(eng)-2*null)*c)
@@ -336,7 +330,8 @@ function IBM3(Eng, Fre, iter, init)
             col = size(count_d[k])[2]
             for i in 1:col
                 @threads for j in 1:row
-                    alignments[k][j,i] = count_d[k][j,i]/total_d[k][i]
+                    new = log(count_d[k][j,i])-log(sum(count_d[align_key][j,i], dims=1)[i])
+                    alignments[k][j,i] = MathConstants.e ^ new
                 end
             end
         end
