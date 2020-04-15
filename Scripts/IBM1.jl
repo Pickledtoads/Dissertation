@@ -47,8 +47,8 @@ function IBM1(Eng, Fre, iter, init)
         # for each sentence record the sum of translation probabilites
         # for each pair of words
         total = Dict(collect(keys(new_tDict)) .=> [0.0]*length(keys(new_tDict)))
-        for i in 1:length(Eng)
-            
+        @threads for i in 1:length(Eng)
+
             # call CountP to produce counts for sentence i
             SentCount = CountP(Eng[i], Fre[i], new_tDict)
 

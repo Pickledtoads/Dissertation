@@ -10,26 +10,37 @@
 library(shiny)
 library(shinyjqui)
 source("Shift_to_R.R")
+
 # Define UI for application that applies the IBM translation models
 ui <- fluidPage(
     shinyjs::useShinyjs(),
+    
     # Application title
     titlePanel("French-English Translation Using the IBM Models"),
 
     # Dropdown to select which model you wish to use for translation 
     sidebarLayout(position = "left",
         sidebarPanel(width=4,
-            textInput("input_File", "Input the path to the folder with trained distributions:"),
+            textInput("input_File",value ="C:/Users/julul/github/Dissertation/Trained/", "Input the path to the folder with trained distributions:"),
             selectInput("ModelChoice","Which model to use for translation:",c("IBM 1","IBM 2","IBM 3","IBM 4","IBM 5")),
         ),
+        
         # boxes to input the desired phrase for translation
         # And to view the output
         mainPanel(width=8,
-                  textAreaInput("input_Box", "Please input the French sentence for translation:", resize="none"),
+                  textAreaInput("input_Box", value = "cela devrait renforcer le partenariat entre lafrique du sud et leurope",label = "Please input the French sentence for translation:", resize="none"),
                   actionButton("trans_Button", "Press to Translate"),
                   br(),
                   br(),
-                  textOutput("output_Box")
+                  textOutput("output_Box"),
+                  br(),
+                  textAreaInput(inputId="ref_Box", value = "this should strengthen the partnership between south africa and europe",label = "Please input the reference sentence for determining BLEU:", resize="none"),
+                  actionButton("BLEU_Button", "Press to Calculate BLEU"),
+                  br(),
+                  br(),
+                  textOutput("BLEU_Box")
+                  
+                  
         )
     )
     
@@ -37,11 +48,19 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
+  
+  # prevent user from entering data in the output box
   shinyjs::disable("output_Box")
+  rResult <- reactiveValues(translation = "")
   observeEvent(input$trans_Button, {
+    
+    # read in the inputs from textboxes
     folder <- input$input_File
     model <- input$ModelChoice
     french <- unlist(strsplit(input$input_Box,split = " "))
+    
+    # use the dropdown to select the right model
+    # then run the model to translate
     if (model == "IBM 1"){
       translation <- IBM1_Translate(french, 10000)
       output$output_Box <- renderText({paste(translation)})
@@ -59,9 +78,16 @@ server <- function(input, output) {
       output$output_Box <- renderText({paste(translation)})
     }
     
+    # pass the translation result to the reactive
+    rResult$translation <- translation
     
-      
-    
+  })
+  
+  # button to calculate the BLEU
+  observeEvent(input$BLEU_Button, {
+    reference <- input$ref_Box
+    val <- BLEU(reference,rResult$translation)
+    output$BLEU_Box <- renderText({paste(val)})
     
   })
    

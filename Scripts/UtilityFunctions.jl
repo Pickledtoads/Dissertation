@@ -94,20 +94,39 @@ function zero_dict(dict)
 end
 
 function merge_four_layer(dict1,dict2)
+    # Purpose:  Correctly carry out an additive merge for four-layered dictionaries
+    # Inputs:   dict1 - the dictionary we are merging into
+    #           dict2 - the (four-layered) dictionary we wish to merge with dict1
+    # Outputs:  A four-layered dictionary where if the key already existed in dict1
+    #           the value is added, otherwise the key is created
+
+    # name the keys for easy access
     key1 = collect(keys(dict2))[1]
     key2 = collect(keys(dict2[key1]))[1]
     key3 = collect(keys(dict2[key1][key2]))[1]
     key4 = collect(keys(dict2[key1][key2][key3]))[1]
+
+    # if the first key exists
     if haskey(dict1,key1)
+
+        # if the first and second exist
         if haskey(dict1[key1], key2)
+
+            # if we have the first three layers in dict1
             if haskey(dict1[key1][key2],key3)
                 dict1[key1][key2][key3][key4] = dict2[key1][key2][key3][key4]
+
+            # otherwise set the key on the third layer as follows
             else
                 dict1[key1][key2][key3] = dict2[key1][key2][key3]
             end
+
+        # otherwise set the second layer to be as follows
         else
             dict1[key1][key2] = dict2[key1][key2]
         end
+
+    # otherwise simplemerge
     else
         merge!(dict1,dict2)
     end

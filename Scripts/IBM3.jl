@@ -43,9 +43,14 @@ function neighboring(a, jp, lens)
     #           lens - the length of the english and french sentences
     # Outputs:  N - a set of all the neighbours of a
 
+    # initailise N and add a to it
     N = []
     push!(N,a)
+
+    # an array of the indexes that are not pegged
     notpegged = setdiff(1:lens[1], jp)
+
+    # determine all of the moves for this alignment
     for j in notpegged
         for i in 1:lens[2]
             a_new = copy(a)
@@ -53,6 +58,8 @@ function neighboring(a, jp, lens)
             push!(N,a_new)
         end
     end
+
+    # determine all of the swaps for this alignment
     for j1 in notpegged
         for j2 in setdiff(notpegged, j1)
             a_new = copy(a)
@@ -86,6 +93,7 @@ function sample(eng, fre, dict, align,fert,null)
     for j in 1:length(eng)
         for i in 1:length(fre)
             a[j] = i
+
             # Now we find the optimal alignment - using the IBM2 aligment probs
             for j2 in setdiff(1:length(eng),j)
                 align_vec = align_dist[j2, :]
@@ -97,9 +105,11 @@ function sample(eng, fre, dict, align,fert,null)
 
                 a[j2] = argmax(probs)
             end
+
             # Now we find the max alignment using hillclimbing
             lens = [length(eng),length(fre)]
             a = hillclimbing(eng,fre,a, j,dict,align,fert,null)
+
             # finally add the optimal aligment and it's neighbors to the sample
             append!(A, neighboring(a,j,lens))
         end
@@ -137,16 +147,18 @@ function prob(eng,fre,a,dict, align, fert, null)
             end
 
             phi = length([k for (k,v) in a if v==length(fre)])
-            # if there are lots of null tokens the "choose" term needs
-            # to be found differently
 
+
+            # if there are a *small* number of null tokens
             if length(eng)>(2*phi)
                 N = length(eng)-phi
                 x = phi
                 N_x = N-x
 
+                # here we use stirlings approximation (rather than factorials)
                 numerator = 0.5*log(2*MathConstants.pi*N)+N*log(N/MathConstants.e)
 
+                # case where fertility is zero and where it isn't
                 if x != 0
                     denominator = 0.5*log(2*MathConstants.pi*x)+0.5*log(2*MathConstants.pi*N_x)+x*log(x/MathConstants.e)+N_x*log(N_x/MathConstants.e)
                 elseif x == 0
@@ -156,11 +168,15 @@ function prob(eng,fre,a,dict, align, fert, null)
 
                 nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
                 fertility += MathConstants.e^nulls
+
+            # if there are lots of null tokens the "choose" term needs
+            # to be found differently
             else
                 N = phi+1
                 x = 2*phi+1-length(eng)
                 N_x = N-x
 
+                # here we use stirlings approximation (rather than factorials)
                 numerator = 0.5*log(N)+N*log(N/MathConstants.e)
                 denominator = 0.5*log(2*MathConstants.pi*x*N_x)+x*log(x/MathConstants.e)+N_x*log(N_x/MathConstants.e)
 
@@ -204,25 +220,33 @@ function IBM3(Eng, Fre, iter, init)
     # Outputs:  A dictionary containing translation, alignment, fertility
     #           and null insertion probabilities
 
-    init = Dict("trans"=>copy(init["trans"]),"align"=>copy(init["align"]), "fert"=>false, "null"=>false)
+    init = Dict("trans"=>copy(init["trans"]),"align"=>copy(init["align"]),
+                "fert"=>false, "null"=>false)
 
     for it in 1:iter
         # initialise the count variables
-        count_t = zero_dict(init["trans"]) # translation count
+        # translation count
+        count_t = zero_dict(init["trans"])
         total_t = Dict(keys(init["trans"]) .=> [0.0]*length(count_t))
 
-        count_d = zero_align(init_Align(Eng, Fre))# distortion counts
+        # distortion counts
+        count_d = zero_align(init_Align(Eng, Fre))
         total_d = Dict()
 
-        count_p1 = 0 # null insertion counts
+        # null insertion counts
+        count_p1 = 0
         count_p0 = 0
+
+        # fertility counts
         count_f = Dict()
         for k in keys(init["trans"])
-            count_f[k] =  Dict()# fertility counts
+            count_f[k] =  Dict()
         end
 
-        @threads for s in 1:length(Eng)
-
+        for s in 1:length(Eng)
+            if s%1000 == 0
+                print([it s])
+            end
             # split up our words
             sent = Sent_Split(Eng[s],Fre[s])
             eng = sent[1]
@@ -232,21 +256,29 @@ function IBM3(Eng, Fre, iter, init)
             A = sample(eng,fre,init["trans"], init["align"], init["fert"], init["null"])
             c_tot = 0
 
+            # over all alignments we have sampled determine the normalisation constant
             for a in A
-                new = prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])
+                new = prob(eng,fre,a,init["trans"],init["align"],
+                           init["fert"], init["null"])
                 if isnan(new) | isinf(new)
                     new=0
                 end
                 c_tot += new
             end
+
+            # for each of the alignments we have sampled
             for a in A
                 null = 0
-                c = prob(eng,fre,a,init["trans"],init["align"], init["fert"], init["null"])/c_tot
+
+                # determine the increment for this alignment
+                c = prob(eng,fre,a,init["trans"],init["align"],
+                         init["fert"], init["null"])/c_tot
                 if isnan(c) | isinf(c)
                     c=0
                 end
-                for e in 1:length(eng)
 
+                # find the lexical counts
+                for e in 1:length(eng)
                     count_t[fre[a[e]]][eng[e]] += c
                     total_t[fre[a[e]]] += c
                     count_d[align_key][e,a[e]] += c
@@ -254,17 +286,20 @@ function IBM3(Eng, Fre, iter, init)
                         null += 1
                     end
                 end
-                if align_key in keys(total_d)
-                    total_d[align_key] .+= sum(count_d[align_key],dims=1)
-                else
-                    total_d[align_key] = sum(count_d[align_key],dims=1)
-                end
+
+
+                # increment the null insertion probabilities
                 if !isnan(null*c) & !isnan((length(eng)-2*null)*c)
                     count_p1 += null*c
                     count_p0 += abs(length(eng)-2*null)*c
                 end
+
+
+                # calculate the fertlity counts
                 for f in 1:length(fre)
                     fertility = 0
+
+                    # find the number of english words that map to each french word
                     for e in 1:length(eng)
                         if f == a[e]
                                 fertility += 1
@@ -281,24 +316,32 @@ function IBM3(Eng, Fre, iter, init)
         alignments = zero_align(count_d)
 
         fertilities = copy(count_f)
+
         # recalculate the translation distribution
         for i in 1:length(Translation_Dict)
             fre = collect(keys(Translation_Dict))[i]
-            @threads for j in 1:length(Translation_Dict[fre])
+            for j in 1:length(Translation_Dict[fre])
                 eng = collect(keys(Translation_Dict[fre]))[j]
                 Translation_Dict[fre][eng] = count_t[fre][eng]/ total_t[fre]
             end
         end
+
         # Recalculate the alignment distribution
+        alignment = Dict()
         for k in keys(count_d)
-            row = size(count_d[k])[1]
             col = size(count_d[k])[2]
+            row = size(count_d[k])[1]
+            arr = Matrix(undef,row,col)
             for i in 1:col
-                @threads for j in 1:row
-                    alignments[k][j,i] = count_d[k][j,i]/total_d[k][i]
+                norm_val = sum(count_d[k], dims=1)[i]
+                for j in 1:row
+                    new = log(count_d[k][j,i])-log(norm_val)
+                    arr[j,i] = MathConstants.e ^ new
                 end
             end
+            alignments[k] = arr
         end
+
         # Recalculate the fertility distribution
         for f in collect(keys(fertilities))
             try

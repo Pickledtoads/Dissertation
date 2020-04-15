@@ -2,10 +2,13 @@
 # Import all required packages
 using HDF5, JLD, Base.Threads, Statistics,DataFrames,CSV
 
+# Load in the data
 French = readlines(joinpath(@__DIR__,"CleanedShortFrench.txt"))
 English = readlines(joinpath(@__DIR__,"CleanedShortEnglish.txt"))
+
 n = 10000
 
+# Import functions needed for initialising the IBM 1
 include(joinpath(@__DIR__, "Prep_for_R.jl"))
 include(joinpath(@__DIR__, "Scripts\\UtilityFunctions.jl"))
 include(joinpath(@__DIR__, "Scripts\\IBM_Initialize.jl"))
@@ -42,11 +45,11 @@ if isfile(Name3)
     IBM2_save = load(Name3)["IBM2_save"]
     println("loaded - IBM2_save" )
 else
-    IBM2_save = IBM2(English[1:n], French[1:n],25, IBM1_save)
+    IBM2_save = IBM2(English[1:n], French[1:n], 25, IBM1_save)
     save(Name3, "IBM2_save", IBM2_save)
 end
 IBM2_R_Prep(IBM2_save,n)
-IBM2_save["trans"]
+
 
 # Now do IBM3
 include(joinpath(@__DIR__, "Scripts\\IBM3.jl"))
@@ -60,6 +63,7 @@ else
     IBM3_save = IBM3(English[1:n], French[1:n], 1, IBM2_save)
     save(Name4, "IBM3_save", IBM3_save)
 end
+
 
 # Save this is a form that R can access
 IBM3_R_Prep(IBM3_save,n)
@@ -75,8 +79,11 @@ else
     IBM4_save = IBM4(English[1:n], French[1:n], 1, IBM3_save, IBM3_save["align"])
     save(Name5, "IBM4_save", IBM4_save)
 end
+
 # Now output those data-files to an R-friendly format
 IBM4_R_Prep(IBM4_save,n)
+
+
 # Finally IBM5 🍰
 include(joinpath(@__DIR__, "Scripts\\IBM5.jl"))
 Name6 = string(joinpath(@__DIR__, "Trained\\"),"IBM5_save_", n, ".jld")
