@@ -1,7 +1,7 @@
 # import needed librarys
 require(rhdf5)
 
-IBM1_Translate <-function(french,n){
+IBM1_Translate <-function(french,n, File_Root){
   # Purpose:  to apply the IBM1 model to translate a sentence in french
   # Inputs:   french - the french sentence
   #           n - the number of sentences used to train the model
@@ -10,7 +10,6 @@ IBM1_Translate <-function(french,n){
   # Load in the IBM1 data
   IBM1_Names <- c(paste("IBM1_trans_",n,".csv", sep=""))
   IBM1_trans <- read.csv(paste(File_Root,IBM1_Names[1], sep=""),encoding ="UTF-8")
-  
   french <- append(french, "null")
   eng <- c()
   for (f in 1:length(french)){
@@ -25,7 +24,7 @@ IBM1_Translate <-function(french,n){
 }
 
 
-IBM2_Translate <- function(french, n){
+IBM2_Translate <- function(french, n, File_Root){
   # Purpose:  to apply the IBM2 model to translate a sentence in french
   # Inputs:   french - the french sentence
   #           n - the number of sentences used to train the model
@@ -40,15 +39,22 @@ IBM2_Translate <- function(french, n){
   french <- append(french,"null")
   l_fre <- length(french)
   eng <- c()
+  print("hi")
   for (f in 1:l_fre){
     
+    align <-IBM2_align[IBM2_align["fre_len"] == l_fre & IBM2_align["eng_len"] == l_fre, ]
+    
     # Select the correct alignment table
-    align <- IBM2_align[IBM2_align["fre_len"] == l_fre & IBM2_align["eng_len"] == l_fre, ] 
+    tryCatch({
+      index <- unname(which.max(unlist(align[align['e_ind']==f,]["prob"]))[1])
+    }
+    , error = function(e) { index <-f})
+       
     
+    print(french)
     # Find the most likely alignment point for the fth target word
-    index <- unname(which.max(unlist(align[align['e_ind']==f,]["prob"]))[1])
-    
     # Find the most likely translation for the source word aligned with by the fth target word
+    
     word_index = unname(which.max(unlist(IBM2_trans[IBM2_trans["fre"]==french[f],]["prob"]))[1])
     
     # Build the output vector of translated words
@@ -60,7 +66,7 @@ IBM2_Translate <- function(french, n){
 }
 
 
-IBM3_Translate <- function(french, n){
+IBM3_Translate <- function(french, n, File_Root){
   # Purpose:  to apply the IBM3 model to translate a sentence in french
   # Inputs:   french - the french sentence
   #           n - the number of sentences used to train the model
@@ -68,7 +74,6 @@ IBM3_Translate <- function(french, n){
   
   # Load in the IBM3 data
   IBM3_Names <- c(paste("IBM3_trans_",n,".csv", sep=""),paste("IBM3_align_",n,".csv",sep=""),paste("IBM3_fert_",n,".csv", sep=""),paste("IBM3_null_",n,".csv", sep=""))
-  
   IBM3_trans <- read.csv(paste(File_Root,IBM3_Names[1], sep=""),encoding ="UTF-8")
   IBM3_align <- read.csv(paste(File_Root,IBM3_Names[2], sep=""),encoding ="UTF-8")
   IBM3_fert <- read.csv(paste(File_Root,IBM3_Names[3], sep=""),encoding ="UTF-8")
@@ -85,21 +90,29 @@ IBM3_Translate <- function(french, n){
     Fre_ferts<- IBM3_fert[IBM3_fert["french"]==fre,]
     ind <- which.max(unlist(Fre_ferts[,"prob"]))
     fert <- Fre_ferts[,"fertility"][ind]
-    
     if (fert != 0) {
       ferts <- append(ferts,fert)
       words <- append(words, rep(fre,fert))
     }
   }
-
+  
     # Carry out the null insertion step ;)
-    null_insert <- runif(length(words),0,1)< rep(IBM3_null[1], length(words))
-    ind_null <- which(null_insert==T)
-    ind_null <- ind_null + 1:length(ind_null)
-    null_insert <- rep("",length(words)+length(ind_null))
-    null_insert[ind_null] <- "null"
-    null_insert[null_insert != "null"] <- words
+    rand <- runif(length(words),0,1)
+    null_insert <- rand < rep(IBM3_null[1], length(words))
+    if (is.null(words)){
+      return("N/A")
+    }
     
+    if (sum(null_insert)!=0){
+      ind_null <- which(null_insert==T)
+      ind_null <- ind_null + 1:length(ind_null)
+      null_insert <- rep("",length(words)+length(ind_null))
+      null_insert[ind_null] <- "null"
+      null_insert[null_insert != "null"] <- words
+    }
+    else{
+      null_insert <- words
+    }
     # Now we align the words
     n_fre = length(french)
     n_eng = length(null_insert)
@@ -111,12 +124,10 @@ IBM3_Translate <- function(french, n){
     fert_current = 1
     # The next step is to deal with alignment
     for (f in 1:length(null_insert)){
-      
       # null tokens follow uniform distribution
       if (null_insert[f] == "null"){
         aligned[ceiling(runif(1,0,length(null_insert) + 1))] = "null"
       }
-      
       
       else{
         if (fert_current == 1){
@@ -127,7 +138,6 @@ IBM3_Translate <- function(french, n){
           # cept are aligned differently
           alignment <- alignment[-index,]
         }
-        
         # find the most likely alignment
         max_index <- which.max(alignment[,"prob"])[1]
         index <- alignment[,"e_ind"][max_index]
@@ -155,12 +165,10 @@ IBM3_Translate <- function(french, n){
     if (is.na(alignment[1,1])){
       aligned <- null_insert
     }
-    
     translation <- rep("", length(aligned))
     fert_index = 1
     fert_current = 1
-    
-    
+
     for (f in 1:length(aligned)){
       if (fert_current == 1){
         lex <- IBM3_trans[IBM3_trans["fre"]==aligned[f],]
@@ -169,32 +177,29 @@ IBM3_Translate <- function(french, n){
         # prevent words in the same cept having identical translations
         lex <- lex[lex$eng != eng,]
       }
-      
       # find the word with highest probability
       max_trans <- which.max(lex[,"prob"])[1]
       eng <- as.character(lex[,"eng"][max_trans])
       translation[f] <- eng
       
-      
-    
+
       # increment fertilty index and reset fert_current if we just aligned the 
       # last word in the cept
-      if (fert_current == ferts[fert_index]){
+      if (fert_current == ferts[fert_index] & aligned[f]!="null"){
         fert_index = fert_index+1
         fert_current = 0
-        last_cept <- as.integer(ceiling(mean(cept_map)))
       }
       
       # otherwise increment the current fertility
-      fert_current = fert_current+1
-      
-      
+      if (aligned[f] != "null"){
+        fert_current = fert_current+1
+      }
   }
    return(translation)
 }
 
 
-IBM4_Translate <- function(french, n){
+IBM4_Translate <- function(french, n, File_Root){
   # Purpose:  to apply the IBM4 model to translate a sentence in french
   # Inputs:   french - the french sentence
   #           n - the number of sentences used to train the model
@@ -521,8 +526,7 @@ BLEU <- function(refer, trans){
       for (step in 1:(length(ref)-(i-1))){
         rence <- append(rence, paste(ref[step:(step+i-1)], sep=" ", collapse=" "))
       }
-      print(c(L,rence))
-      
+
       
     }
     # if n = 1 set L and rence
