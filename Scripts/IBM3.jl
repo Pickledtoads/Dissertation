@@ -333,16 +333,14 @@ function IBM3(Eng, Fre, iter, init)
             row = size(count_d[k])[1]
             arr = Matrix(undef,row,col)
             for i in 1:col
-<<<<<<< HEAD
+
                 norm_val = sum(count_d[k], dims=1)[i]
                 for j in 1:row
                     new = log(count_d[k][j,i])-log(norm_val)
                     arr[j,i] = MathConstants.e ^ new
-=======
                 @threads for j in 1:row
                     new = log(count_d[k][j,i])-log(sum(count_d[align_key][j,i], dims=1)[i])
                     alignments[k][j,i] = MathConstants.e ^ new
->>>>>>> 486a625c4578997f22d1fb3a6808036830ac9cc8
                 end
             end
             alignments[k] = arr
@@ -363,8 +361,4 @@ function IBM3(Eng, Fre, iter, init)
     end
     return(init)
 end
-
-
-
-c = Dict(0=>1,2=>1)
-length([k for (k,v) in c if v==1])
+end
