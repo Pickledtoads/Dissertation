@@ -5,8 +5,8 @@ account: pickledtoads
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 2171269
-bundleId: 3054831
+bundleId: 3055156
 url: https://pickledtoads.shinyapps.io/Translation_Shiny/
-when: 1587648596.1588
+when: 1587653598.40854
 asMultiple: FALSE
 asStatic: FALSE

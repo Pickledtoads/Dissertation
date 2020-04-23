@@ -8,7 +8,7 @@ IBM1_Translate <-function(french,n, File_Root){
   
   # Load in the IBM1 data
   IBM1_Names <- c(paste("IBM1_trans_",n,".csv", sep=""))
-  IBM1_trans <- read.csv(paste(File_Root,IBM1_Names[1], sep=""),encoding ="UTF-8")
+  IBM1_trans <- data.frame(read_csv(url(paste(File_Root,IBM1_Names[1], sep=""))))
   french <- append(french, "null")
   eng <- c()
   for (f in 1:length(french)){
@@ -31,8 +31,8 @@ IBM2_Translate <- function(french, n, File_Root){
   
   # Load in the IBM2 data
   IBM2_Names <- c(paste("IBM2_trans_",n,".csv", sep=""),paste("IBM2_align_",n,".csv", sep=""))
-  IBM2_trans <- read.csv(paste(File_Root,IBM2_Names[1], sep=""),encoding ="UTF-8")
-  IBM2_align <- read.csv(paste(File_Root,IBM2_Names[2], sep=""),encoding ="UTF-8")
+  IBM2_trans <- data.frame(read_csv(url(paste(File_Root,IBM2_Names[1], sep=""))))
+  IBM2_align <- data.frame(read_csv(url(paste(File_Root,IBM2_Names[2], sep=""))))
   
   # Add in the null word & save down the length of the sentence
   french <- append(french,"null")
@@ -70,10 +70,10 @@ IBM3_Translate <- function(french, n, File_Root){
   
   # Load in the IBM3 data
   IBM3_Names <- c(paste("IBM3_trans_",n,".csv", sep=""),paste("IBM3_align_",n,".csv",sep=""),paste("IBM3_fert_",n,".csv", sep=""),paste("IBM3_null_",n,".csv", sep=""))
-  IBM3_trans <- read.csv(paste(File_Root,IBM3_Names[1], sep=""),encoding ="UTF-8")
-  IBM3_align <- read.csv(paste(File_Root,IBM3_Names[2], sep=""),encoding ="UTF-8")
-  IBM3_fert <- read.csv(paste(File_Root,IBM3_Names[3], sep=""),encoding ="UTF-8")
-  IBM3_null <- read.csv(paste(File_Root,IBM3_Names[4], sep=""),encoding ="UTF-8")
+  IBM3_trans <- data.frame(read_csv(url(paste(File_Root,IBM3_Names[1], sep=""))))
+  IBM3_align <- data.frame(read_csv(url(paste(File_Root,IBM3_Names[2], sep=""))))
+  IBM3_fert <- data.frame(read_csv(url(paste(File_Root,IBM3_Names[3], sep=""))))
+  IBM3_null <- data.frame(read_csv(url(paste(File_Root,IBM3_Names[4], sep=""))))
   # Create a vector to contain the translation
   words <- c()
   ferts <- c()
@@ -204,10 +204,10 @@ IBM4_Translate <- function(french, n, File_Root){
   # Load in the IBM4 data
   IBM4_Names <- c(paste("IBM4_trans_",n,".csv", sep=""),paste("IBM4_align_",n,".csv", sep=""),paste("IBM4_fert_",n,".csv", sep=""),paste("IBM4_null_",n,".csv", sep=""))
   
-  IBM4_trans <- read.csv(paste(File_Root,IBM4_Names[1], sep=""),encoding ="UTF-8")
-  IBM4_align <- read.csv(paste(File_Root,IBM4_Names[2], sep=""),encoding ="UTF-8")
-  IBM4_fert <- read.csv(paste(File_Root,IBM4_Names[3], sep=""),encoding ="UTF-8")
-  IBM4_null <- read.csv(paste(File_Root,IBM4_Names[4], sep=""),encoding ="UTF-8")
+  IBM4_trans <- data.frame(read_csv(url(paste(File_Root,IBM4_Names[1], sep=""))))
+  IBM4_align <- data.frame(read_csv(url(paste(File_Root,IBM4_Names[2], sep=""))))
+  IBM4_fert <- data.frame(read_csv(url(paste(File_Root,IBM4_Names[3], sep=""))))
+  IBM4_null <- data.frame(read_csv(url(paste(File_Root,IBM4_Names[4], sep=""))))
   # Create a vector to contain the translation
   words <- c()
   ferts <- c()
@@ -357,10 +357,9 @@ IBM5_Translate <- function(french, IBM5_trans,IBM5_align,IBM5_fert,IBM5_null){
   # Load in the IBM5 data
   IBM5_Names <- c(paste("IBM5_trans_",n,".csv"),paste("IBM5_align_",n,".csv"),paste("IBM5_fert_",n,".csv"),paste("IBM5_null_",n,".csv"))
   
-  IBM5_trans <- read.csv(paste(File_Root,IBM5_Names[1], sep=""),encoding ="UTF-8")
-  IBM5_align <- read.csv(paste(File_Root,IBM5_Names[2], sep=""),encoding ="UTF-8")
-  IBM5_fert <- read.csv(paste(File_Root,IBM5_Names[3], sep=""),encoding ="UTF-8")
-  IBM5_null <- read.csv(paste(File_Root,IBM5_Names[4], sep=""),encoding ="UTF-8")
+  IBM5_trans <- data.frame(read_csv(url(paste(File_Root,IBM5_Names[1], sep=""))))
+  IBM5_align <- data.frame(read_csv(url(paste(File_Root,IBM5_Names[2], sep=""))))
+  IBM5_fert <- data.frame(read_csv(url(paste(File_Root,IBM5_Names[3], sep=""))))
   
   # Create a vector to contain the translation
   words <- c()

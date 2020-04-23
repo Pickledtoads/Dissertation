@@ -8,6 +8,7 @@
 #
 
 library(shiny)
+library(readr)
 library(shinyjqui)
 source("Shift_to_R.R")
 
@@ -21,7 +22,7 @@ ui <- fluidPage(
     # Dropdown to select which model you wish to use for translation
     sidebarLayout(position = "left",
         sidebarPanel(width=4,
-            textInput("input_File", "Input the path to the folder with trained distributions:"),
+            textInput("input_File", value = "https://raw.githubusercontent.com/Pickledtoads/Trained/master/","Input the path to the folder with trained distributions:"),
             selectInput("ModelChoice","Which model to use for translation:",c("IBM 1","IBM 2","IBM 3","IBM 4","IBM 5")),
         ),
 
