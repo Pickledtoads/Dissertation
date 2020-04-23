@@ -1,0 +1,12 @@
+name: Translation_Shiny
+title: Translation_Shiny
+username:
+account: pickledtoads
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2171269
+bundleId: 3054831
+url: https://pickledtoads.shinyapps.io/Translation_Shiny/
+when: 1587648596.1588
+asMultiple: FALSE
+asStatic: FALSE

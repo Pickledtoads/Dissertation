@@ -21,20 +21,20 @@ ui <- fluidPage(
     # Dropdown to select which model you wish to use for translation
     sidebarLayout(position = "left",
         sidebarPanel(width=4,
-            textInput("input_File",value ="C:/Users/julul/github/Dissertation/Trained/", "Input the path to the folder with trained distributions:"),
+            textInput("input_File", "Input the path to the folder with trained distributions:"),
             selectInput("ModelChoice","Which model to use for translation:",c("IBM 1","IBM 2","IBM 3","IBM 4","IBM 5")),
         ),
 
         # boxes to input the desired phrase for translation
         # And to view the output
         mainPanel(width=8,
-                  textAreaInput("input_Box", value = "cela devrait renforcer le partenariat entre lafrique du sud et leurope",label = "Please input the French sentence for translation:", resize="none"),
+                  textAreaInput("input_Box", label = "Please input the French sentence for translation:", resize="none"),
                   actionButton("trans_Button", "Press to Translate"),
                   br(),
                   br(),
                   textOutput("output_Box"),
                   br(),
-                  textAreaInput(inputId="ref_Box", value = "this should strengthen the partnership between south africa and europe",label = "Please input the reference sentence for determining BLEU:", resize="none"),
+                  textAreaInput(inputId="ref_Box", label = "Please input the reference sentence for determining BLEU:", resize="none"),
                   actionButton("BLEU_Button", "Press to Calculate BLEU"),
                   br(),
                   br(),

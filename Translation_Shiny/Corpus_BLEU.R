@@ -1,6 +1,5 @@
 # Load in the Functions for Translating and Finding BLEU
 source("Shift_to_R.R")
-require(utf8)
 
 Corpus_BLEU <- function(filepath1,filepath2, choice, leng, folder){
     choice <- unlist(choice)[1]

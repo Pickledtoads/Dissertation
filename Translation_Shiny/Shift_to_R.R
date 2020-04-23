@@ -1,5 +1,4 @@
 # import needed librarys
-require(rhdf5)
 
 IBM1_Translate <-function(french,n, File_Root){
   # Purpose:  to apply the IBM1 model to translate a sentence in french
