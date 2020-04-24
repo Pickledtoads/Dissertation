@@ -6,7 +6,7 @@ using HDF5, JLD, Base.Threads, Statistics,DataFrames,CSV
 French = readlines(joinpath(@__DIR__,"CleanedShortFrench.txt"))
 English = readlines(joinpath(@__DIR__,"CleanedShortEnglish.txt"))
 
-n = 10000
+n = 10
 
 # Import functions needed for initialising the IBM 1
 include(joinpath(@__DIR__, "Prep_for_R.jl"))
@@ -48,6 +48,7 @@ else
     IBM2_save = IBM2(English[1:n], French[1:n], 25, IBM1_save)
     save(Name3, "IBM2_save", IBM2_save)
 end
+print(IBM2_save)
 IBM2_R_Prep(IBM2_save,n)
 
 

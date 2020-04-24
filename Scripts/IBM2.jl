@@ -103,6 +103,7 @@ function IBM2(Eng, Fre, iter, init)
         end
 
         alignment = Dict()
+        #print(counts_a)
         for align_key in keys(count_a)
             f_l = size(count_a[align_key])[2]
             e_l = size(count_a[align_key])[1]
@@ -114,23 +115,12 @@ function IBM2(Eng, Fre, iter, init)
                     arr[j,i] = MathConstants.e^new
                 end
             end
-        for align_key in keys(alignment)
-            for j in 1:size(alignment[align_key])[1]
-                for i in 1:size(alignment[align_key])[2]
-                    # divide each entry by the sum of the row it is in
-                    new = log(count_a[align_key][j,i]) - log(sum(count_a[align_key][j,i], dims=2)[j])
-                    alignment[align_key][j,i] = MathConstants.e ^ new
-
-                end
-            end
-            alignment[align_key]=arr
+            alignment[align_key] = arr
         end
-
         # reset the intial values for the next iteration
         align = alignment
         Trans_Dict = count_s
     end
     # output the updated estimates
     return(Dict("trans"=>Trans_Dict, "align" => alignment, "align2"=>count_a, "align3"=>total_a))
-    end
 end

@@ -19,7 +19,10 @@ function prob_IBM4(eng,fre,a,dict, align, fert, null)
 
         # Calculate the fertility probabilities
         if f in keys(fert[fre[i]])
-            fertility+=MathConstants.e^log(factorial(f)*fert[fre[i]][f])
+            ferti = log(factorial(f)*fert[fre[i]][f])
+            if !isnan(ferti) & !isinf(ferti)
+                fertility+=MathConstants.e^ferti
+            end
         end
 
         phi = length([k for (k,v) in a if v==length(fre)])
@@ -43,7 +46,9 @@ function prob_IBM4(eng,fre,a,dict, align, fert, null)
 
 
             nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
-            fertility += MathConstants.e^nulls
+            if !isnan(nulls) & !isinf(nulls)
+                fertility += MathConstants.e^nulls
+            end
 
         # if there are lots of null tokens the "choose" term needs
         # to be found differently
@@ -56,7 +61,9 @@ function prob_IBM4(eng,fre,a,dict, align, fert, null)
             denominator = 0.5*log(2*MathConstants.pi*x*N_x)+x*log(x/MathConstants.e)+N_x*log(N_x/MathConstants.e)
 
             nulls = (numerator-denominator)+phi*log(null[1])+N_x*log(null[2])
-            fertility += MathConstants.e^nulls
+            if !isnan(nulls) & !isinf(nulls)
+                fertility += MathConstants.e^nulls
+            end
         end
     end
 
@@ -104,7 +111,9 @@ function prob_IBM4(eng,fre,a,dict, align, fert, null)
 
             # increment the distortion counts
             new = sum(log.(new))
-            alignment += MathConstants.e^new
+            if !isnan(new) & !isinf(new)
+                alignment += MathConstants.e^new
+            end
             last_cept = convert(Integer,ceil(mean(maps_to)))
         end
 
@@ -119,7 +128,7 @@ function prob_IBM4(eng,fre,a,dict, align, fert, null)
     end
 
     # Return the probability
-    prob = MathConstants.e^(log(lex)+log(fertility))
+    prob = MathConstants.e^(log(lex)+log(fertility)+log(alignment))
 
 
     return(prob)

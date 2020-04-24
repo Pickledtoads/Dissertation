@@ -47,7 +47,7 @@ IBM2_Translate <- function(french, n, File_Root){
       index <- unname(which.max(unlist(align[align['e_ind']==f,]["prob"]))[1])
     }
     , error = function(e) { index <-f})
-       
+    
     # Find the most likely alignment point for the fth target word
     # Find the most likely translation for the source word aligned with by the fth target word
     
@@ -77,11 +77,11 @@ IBM3_Translate <- function(french, n, File_Root){
   # Create a vector to contain the translation
   words <- c()
   ferts <- c()
-
+  
   for (i in 1:length(french)){
     # Select the word that we are translating
     fre <- french[i]
-
+    
     # Carry out the fertility step
     Fre_ferts<- IBM3_fert[IBM3_fert["french"]==fre,]
     ind <- which.max(unlist(Fre_ferts[,"prob"]))
@@ -92,106 +92,106 @@ IBM3_Translate <- function(french, n, File_Root){
     }
   }
   
-    # Carry out the null insertion step ;)
-    rand <- runif(length(words),0,1)
-    null_insert <- rand < rep(IBM3_null[1], length(words))
-    if (is.null(words)){
-      return("N/A")
+  # Carry out the null insertion step ;)
+  rand <- runif(length(words),0,1)
+  null_insert <- rand < rep(IBM3_null[1], length(words))
+  if (is.null(words)){
+    return("N/A")
+  }
+  
+  if (sum(null_insert)!=0){
+    ind_null <- which(null_insert==T)
+    ind_null <- ind_null + 1:length(ind_null)
+    null_insert <- rep("",length(words)+length(ind_null))
+    null_insert[ind_null] <- "null"
+    null_insert[null_insert != "null"] <- words
+  }
+  else{
+    null_insert <- words
+  }
+  # Now we align the words
+  n_fre = length(french)
+  n_eng = length(null_insert)
+  align = IBM3_align[IBM3_align[,"fre_len"] == (n_fre+1) & IBM3_align[,"eng_len"] == n_eng,]
+  aligned = rep("", length(null_insert))
+  
+  # to keep track of the fertility of the current word
+  fert_index = 1
+  fert_current = 1
+  # The next step is to deal with alignment
+  for (f in 1:length(null_insert)){
+    # null tokens follow uniform distribution
+    if (null_insert[f] == "null"){
+      aligned[ceiling(runif(1,0,length(null_insert) + 1))] = "null"
     }
     
-    if (sum(null_insert)!=0){
-      ind_null <- which(null_insert==T)
-      ind_null <- ind_null + 1:length(ind_null)
-      null_insert <- rep("",length(words)+length(ind_null))
-      null_insert[ind_null] <- "null"
-      null_insert[null_insert != "null"] <- words
-    }
     else{
-      null_insert <- words
-    }
-    # Now we align the words
-    n_fre = length(french)
-    n_eng = length(null_insert)
-    align = IBM3_align[IBM3_align[,"fre_len"] == (n_fre+1) & IBM3_align[,"eng_len"] == n_eng,]
-    aligned = rep("", length(null_insert))
-    
-    # to keep track of the fertility of the current word
-    fert_index = 1
-    fert_current = 1
-    # The next step is to deal with alignment
-    for (f in 1:length(null_insert)){
-      # null tokens follow uniform distribution
-      if (null_insert[f] == "null"){
-        aligned[ceiling(runif(1,0,length(null_insert) + 1))] = "null"
-      }
-      
-      else{
-        if (fert_current == 1){
-          alignment <- align[align[,"f_ind"] == f,]
-        }
-        else {
-          # temporarily remove each alignment point so words in the same
-          # cept are aligned differently
-          alignment <- alignment[-index,]
-        }
-        # find the most likely alignment
-        max_index <- which.max(alignment[,"prob"])[1]
-        index <- alignment[,"e_ind"][max_index]
-        aligned[index]<- null_insert[f]
-        
-        
-        # increment fertilty index and reset fert_current if we just aligned the 
-        # last word in the cept
-        if (fert_current==ferts[fert_index]){
-          fert_index = fert_index + 1
-          fert_current = 1
-
-        }
-        
-        # otherwise increment the current fertility
-        else{
-          fert_current =fert_current + 1
-        }
-      }
-
-
-    }
-    aligned <- aligned[aligned != ""]
-    # if we can't find and alignment table skip alignment
-    if (is.na(alignment[1,1])){
-      aligned <- null_insert
-    }
-    translation <- rep("", length(aligned))
-    fert_index = 1
-    fert_current = 1
-
-    for (f in 1:length(aligned)){
       if (fert_current == 1){
-        lex <- IBM3_trans[IBM3_trans["fre"]==aligned[f],]
+        alignment <- align[align[,"f_ind"] == f,]
       }
       else {
-        # prevent words in the same cept having identical translations
-        lex <- lex[lex$eng != eng,]
+        # temporarily remove each alignment point so words in the same
+        # cept are aligned differently
+        alignment <- alignment[-index,]
       }
-      # find the word with highest probability
-      max_trans <- which.max(lex[,"prob"])[1]
-      eng <- as.character(lex[,"eng"][max_trans])
-      translation[f] <- eng
+      # find the most likely alignment
+      max_index <- which.max(alignment[,"prob"])[1]
+      index <- alignment[,"e_ind"][max_index]
+      aligned[index]<- null_insert[f]
       
-
+      
       # increment fertilty index and reset fert_current if we just aligned the 
       # last word in the cept
-      if (fert_current == ferts[fert_index] & aligned[f]!="null"){
-        fert_index = fert_index+1
-        fert_current = 0
+      if (fert_current==ferts[fert_index]){
+        fert_index = fert_index + 1
+        fert_current = 1
+        
       }
       
       # otherwise increment the current fertility
-      if (aligned[f] != "null"){
-        fert_current = fert_current+1
+      else{
+        fert_current =fert_current + 1
       }
+    }
+    
+    
   }
-   return(translation)
+  aligned <- aligned[aligned != ""]
+  # if we can't find and alignment table skip alignment
+  if (is.na(alignment[1,1])){
+    aligned <- null_insert
+  }
+  translation <- rep("", length(aligned))
+  fert_index = 1
+  fert_current = 1
+  
+  for (f in 1:length(aligned)){
+    if (fert_current == 1){
+      lex <- IBM3_trans[IBM3_trans["fre"]==aligned[f],]
+    }
+    else {
+      # prevent words in the same cept having identical translations
+      lex <- lex[lex$eng != eng,]
+    }
+    # find the word with highest probability
+    max_trans <- which.max(lex[,"prob"])[1]
+    eng <- as.character(lex[,"eng"][max_trans])
+    translation[f] <- eng
+    
+    
+    # increment fertilty index and reset fert_current if we just aligned the 
+    # last word in the cept
+    if (fert_current == ferts[fert_index] & aligned[f]!="null"){
+      fert_index = fert_index+1
+      fert_current = 0
+    }
+    
+    # otherwise increment the current fertility
+    if (aligned[f] != "null"){
+      fert_current = fert_current+1
+    }
+  }
+  return(translation)
 }
 
 
@@ -271,10 +271,12 @@ IBM4_Translate <- function(french, n, File_Root){
         # select the right alignment table for this word
         alignment <- align[align["fert"]==ferts[fert_index],]
         alignment <- alignment[alignment$rel_dist %in% (1-last_cept):(length(null_insert)-last_cept),]
+        
         # find the likliest relative distortion
         greatest_prob <- which.max(unlist(alignment["prob"]))[1]
         mapping <- last_cept+alignment[greatest_prob,"rel_dist"]
         aligned[mapping] <- null_insert[f] 
+        
         # keep track of the indicies in this cept
         cept_map <- append(cept_map,mapping)
         
@@ -348,18 +350,22 @@ IBM4_Translate <- function(french, n, File_Root){
 }
 
 
-IBM5_Translate <- function(french, IBM5_trans,IBM5_align,IBM5_fert,IBM5_null){
+IBM5_Translate <- function(french, n, File_Root){
   # Purpose:  to apply the IBM5 model to translate a sentence in french
   # Inputs:   french - the french sentence
   #           n - the number of sentences used to train the model
   # Outputs:  the french sentence translated to english
   
   # Load in the IBM5 data
-  IBM5_Names <- c(paste("IBM5_trans_",n,".csv"),paste("IBM5_align_",n,".csv"),paste("IBM5_fert_",n,".csv"),paste("IBM5_null_",n,".csv"))
+  IBM5_Names <- c(paste("IBM5_trans_",n,".csv", sep=""),
+                  paste("IBM5_align_",n,".csv", sep=""),
+                  paste("IBM5_fert_",n,".csv", sep=""),
+                  paste("IBM5_null_",n,".csv", sep=""))
   
   IBM5_trans <- data.frame(read_csv(url(paste(File_Root,IBM5_Names[1], sep=""))))
   IBM5_align <- data.frame(read_csv(url(paste(File_Root,IBM5_Names[2], sep=""))))
   IBM5_fert <- data.frame(read_csv(url(paste(File_Root,IBM5_Names[3], sep=""))))
+  IBM5_null <- data.frame(read_csv(url(paste(File_Root,IBM5_Names[4], sep=""))))
   
   # Create a vector to contain the translation
   words <- c()
@@ -374,26 +380,42 @@ IBM5_Translate <- function(french, IBM5_trans,IBM5_align,IBM5_fert,IBM5_null){
     ind <- which.max(unlist(Fre_ferts[,"prob"]))
     fert <- Fre_ferts[,"fertility"][ind]
     
+    if (length(fert) == 0){
+      fert <- 0
+    }
     if (fert != 0) {
       ferts <- append(ferts,fert)
       words <- append(words, rep(fre,fert))
     }
   }
   
+  
+  
+  
   # Carry out the null insertion step ;)
-  null_insert <- runif(length(words),0,1)< rep(IBM5_null[1], length(words))
-  ind_null <- which(null_insert==T)
-  ind_null <- ind_null + 1:length(ind_null)
-  null_insert <- rep("",length(words)+length(ind_null))
-  null_insert[ind_null] <- "null"
-  null_insert[null_insert != "null"] <- words
+  rand <- runif(length(words),0,1)
+  null_insert <- rand < rep(IBM4_null[1], length(words))
+  if (is.null(words)){
+    return("N/A")
+  }
+  
+  if (sum(null_insert)!=0){
+    ind_null <- which(null_insert==T)
+    ind_null <- ind_null + 1:length(ind_null)
+    null_insert <- rep("",length(words)+length(ind_null))
+    null_insert[ind_null] <- "null"
+    null_insert[null_insert != "null"] <- words
+  }
+  else{
+    null_insert <- words
+  }
+  null_insert <- null_insert[null_insert != ""]
   
   # Now we align the words
   n_fre = length(french)
   n_eng = length(null_insert)
   align = IBM5_align
   aligned = rep("", length(null_insert))
-  
   # initilise variables to track fertility
   fert_index = 1
   fert_current = 1
@@ -415,57 +437,55 @@ IBM5_Translate <- function(french, IBM5_trans,IBM5_align,IBM5_fert,IBM5_null){
         
         # select the correct alignment function
         alignment <- align[align["fert"]==ferts[fert_index],]
-        alignment <- alignment[alignment$vac_max == vmax,]
+        alignment <- alignment[alignment$max_vac == vmax,]
         alignment <- alignment[alignment$last_cept == last_cept, ]
-        alignment <- alignment[alignment$rel_dist %in% 1:vmax, ]
+        alignment <- alignment[alignment$rel_dist %in% 1:(vmax-ferts[fert_index]), ]
         
         greatest_prob <- which.max(unlist(alignment["prob"]))
         # find the indices of the missing entries
         empties <- which(aligned == "")
         mapping <- empties[alignment[greatest_prob,"rel_dist"]]
         aligned[mapping] <- null_insert[f] 
-        cept_map <- append(cept_map,mapping)
+        cept_map <- c(cept_map,mapping)
         vmax = vmax-1
       }
       
       # after the first word in a cept
       else {
-        
         # calculate the last index mapped to
         last_point <- sum(aligned[1:cept_map[fert_current-1]]=="")
-        
         # consider only vacencies after the last places word
         vmax_1 <- vmax - last_point
-        
         # select the correct alignment function
         alignment <- align[align["fert"]==ferts[fert_index],]
-        alignment <- alignment[alignment$vac_max == vmax_1,]
+        alignment <- alignment[alignment$max_vac == vmax_1,]
         alignment <- alignment[alignment$last_cept == last_point, ]
-        alignment <- alignment[alignment$rel_dist %in% 1:vmax_1, ]
+        alignment <- alignment[alignment$rel_dist %in% 1:(vmax_1+fert_current-ferts[fert_index]), ]
         
         # choose the most likely alignment
         greatest_prob <- which.max(unlist(alignment["prob"]))[1]
         empties_1 <- which(aligned == "")[(last_point+1):vmax]
         mapping <- empties_1[alignment[greatest_prob,"rel_dist"]]
         aligned[mapping] <- null_insert[f] 
-        cept_map <- append(cept_map,mapping)
+        cept_map <- c(cept_map,mapping)
         
         # deincrement the number of vacencies
         vmax = vmax-1
       }
-      
       # reset the counts
-      if (fert_current == ferts[fert_index]){
-        
+      if (fert_current == ferts[fert_index] & null_insert[f] != "null"){
         fert_index = fert_index+1
         fert_current = 0
         last_cept <- as.integer(ceiling(mean(cept_map)))
+        
         last_cept <- sum(aligned[1:last_cept]=="")
         cept_map <- c()
       }
       
       # increment the fertilities
-      fert_current <- fert_current+1
+      if (null_insert[f] != "null"){
+        fert_current <- fert_current+1
+      }
     }
     
     
@@ -482,20 +502,21 @@ IBM5_Translate <- function(french, IBM5_trans,IBM5_align,IBM5_fert,IBM5_null){
       # remove one word so that two words in a cept are not translated the same
       lex <- lex[lex$eng != eng,]
     }
-    
     # find the most likely translation
     max_trans <- which.max(lex[,"prob"])[1]
     eng <- as.character(lex[,"eng"][max_trans])
     translation[f] <- eng
-    fert_current = fert_current+1
+    
     
     # reset the fertility count
-    if (fert_current == ferts[fert_index]){
+    if (fert_current == ferts[fert_index] & null_insert[f] != "null"){
       fert_index = fert_index+1
       fert_current = 0
       last_cept <- as.integer(ceiling(mean(cept_map)))
     }
-    
+    if(null_insert[f] != "null"){
+      fert_current = fert_current+1
+    }
     
   }
   return(translation)
@@ -538,7 +559,7 @@ BLEU <- function(refer, trans){
       for (step in 1:(length(ref)-(i-1))){
         rence <- append(rence, paste(ref[step:(step+i-1)], sep=" ", collapse=" "))
       }
-
+      
       
     }
     # if n = 1 set L and rence
@@ -577,3 +598,4 @@ BLEU <- function(refer, trans){
   return(total)
   
 }
+

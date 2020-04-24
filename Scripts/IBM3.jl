@@ -338,9 +338,6 @@ function IBM3(Eng, Fre, iter, init)
                 for j in 1:row
                     new = log(count_d[k][j,i])-log(norm_val)
                     arr[j,i] = MathConstants.e ^ new
-                @threads for j in 1:row
-                    new = log(count_d[k][j,i])-log(sum(count_d[align_key][j,i], dims=1)[i])
-                    alignments[k][j,i] = MathConstants.e ^ new
                 end
             end
             alignments[k] = arr
@@ -360,5 +357,4 @@ function IBM3(Eng, Fre, iter, init)
         init = Dict("trans"=> copy(Translation_Dict),"align"=>copy(alignments),"fert"=>copy(fertilities), "null" => [p1,p0])
     end
     return(init)
-end
 end
