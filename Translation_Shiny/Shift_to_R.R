@@ -394,7 +394,7 @@ IBM5_Translate <- function(french, n, File_Root){
   
   # Carry out the null insertion step ;)
   rand <- runif(length(words),0,1)
-  null_insert <- rand < rep(IBM4_null[1], length(words))
+  null_insert <- rand < rep(IBM5_null[1], length(words))
   if (is.null(words)){
     return("N/A")
   }
@@ -445,6 +445,16 @@ IBM5_Translate <- function(french, n, File_Root){
         # find the indices of the missing entries
         empties <- which(aligned == "")
         mapping <- empties[alignment[greatest_prob,"rel_dist"]]
+        
+        if (length(mapping)==0){
+          mapping = 1
+        }
+        else {
+          if (is.na(mapping)){ 
+            mapping <- 1
+          }  
+        }
+        
         aligned[mapping] <- null_insert[f] 
         cept_map <- c(cept_map,mapping)
         vmax = vmax-1
@@ -460,12 +470,20 @@ IBM5_Translate <- function(french, n, File_Root){
         alignment <- align[align["fert"]==ferts[fert_index],]
         alignment <- alignment[alignment$max_vac == vmax_1,]
         alignment <- alignment[alignment$last_cept == last_point, ]
-        alignment <- alignment[alignment$rel_dist %in% 1:(vmax_1+fert_current-ferts[fert_index]), ]
+        alignment <- alignment[alignment$rel_dist %in% 1:(vmax_1+fert_current-ferts[fert_index]-1), ]
         
         # choose the most likely alignment
         greatest_prob <- which.max(unlist(alignment["prob"]))[1]
         empties_1 <- which(aligned == "")[(last_point+1):vmax]
         mapping <- empties_1[alignment[greatest_prob,"rel_dist"]]
+        if (length(mapping)==0){
+          mapping = 1
+        }
+        else {
+          if (is.na(mapping)){ 
+            mapping <- 1
+          }  
+        }
         aligned[mapping] <- null_insert[f] 
         cept_map <- c(cept_map,mapping)
         
@@ -504,6 +522,7 @@ IBM5_Translate <- function(french, n, File_Root){
     }
     # find the most likely translation
     max_trans <- which.max(lex[,"prob"])[1]
+    
     eng <- as.character(lex[,"eng"][max_trans])
     translation[f] <- eng
     
@@ -517,6 +536,7 @@ IBM5_Translate <- function(french, n, File_Root){
     if(null_insert[f] != "null"){
       fert_current = fert_current+1
     }
+    
     
   }
   return(translation)

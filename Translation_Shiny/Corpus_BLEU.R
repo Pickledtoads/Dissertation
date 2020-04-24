@@ -59,8 +59,9 @@ Corpus_BLEU <- function(filepath1,filepath2, choice, leng, folder){
         break
       }
       
-      ping <- ping + 1
       print(ping)
+      ping <- ping + 1
+      
     }
     
   
