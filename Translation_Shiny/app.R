@@ -111,10 +111,15 @@ server <- function(input, output) {
     # choose the correct filepaths for the corpus
     path <- as.character(input$input_File)
     folder <- path
-    path <- substr(path,1,(nchar(path)-8))
+    
+    # set the filepaths to the corpus
     Fre_path <- paste(path,"CleanedShortFrench.txt", sep="")
     Eng_path <- paste(path,"CleanedShortEnglish.txt", sep="")
+    
+    # generate the corpus BLEU
     BLEU <- Corpus_BLEU(Fre_path, Eng_path, model, input$ref_A_Box, folder)
+    
+    # Output the average BLEU
     output$BLEU_A_Box <- renderText({paste(BLEU)})
 
   })
